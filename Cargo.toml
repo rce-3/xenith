@@ -28,7 +28,7 @@ authors = ["abel <67806187+theo-abel@users.noreply.github.com>"]
 
 homepage = "<https://xenith.re>"
 documentation = "<https://xenith.re/docs/>"
-repository = "<https://github.com/xenith-re/xenith/>"
+repository = "<https://github.com/rce-3/xenith/>"
 
 keywords = ["virtualization", "detection", "vmi", "debugger", "xen", "hypervisor"]
 

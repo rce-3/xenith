@@ -24,8 +24,8 @@ Xenith wish to be a community-driven project. We welcome contributions from ever
 
 ## Contributing
 
-Xenith is free and open source. You can find the source code on GitHub and issues and feature requests can be posted on the [GitHub issue tracker](https://github.com/xenith-re/xenith/issues).
-If you'd like to contribute to fix bugs and add feature, please read the [contributing guide](https://xenith.re/docs/development/contributing/) and consider opening a [pull request](https://github.com/xenith-re/xenith/pulls).
+Xenith is free and open source. You can find the source code on GitHub and issues and feature requests can be posted on the [GitHub issue tracker](https://github.com/rce-3/xenith/issues).
+If you'd like to contribute to fix bugs and add feature, please read the [contributing guide](https://xenith.re/docs/development/contributing/) and consider opening a [pull request](https://github.com/rce-3/xenith/pulls).
 
 ## License
 
