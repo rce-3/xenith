@@ -10,7 +10,7 @@ Pre-requisites: [Hugo](https://gohugo.io/getting-started/installing/), [Go](http
 
 ```shell
 # Clone the repo
-git clone git@github.com:xenith-re/xenith.git
+git clone git@github.com:rce-3/xenith.git
 
 # Change directory
 cd xenith

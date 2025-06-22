@@ -11,8 +11,8 @@
     </p>
     <div align="center">
         <img src="https://img.shields.io/badge/Built%20with%20Rust-grey?style=for-the-badge&logo=rust&color=%23282828">
-        <a href="https://coveralls.io/github/xenith-re/xenith?branch=main" target="_blank" >
-            <img alt="Coveralls" src="https://img.shields.io/coverallsCoverage/github/xenith-re/xenith?style=for-the-badge&labelColor=%23282828&color=%23FEFEFE">
+        <a href="https://coveralls.io/github/rce-3/xenith?branch=main" target="_blank" >
+            <img alt="Coveralls" src="https://img.shields.io/coverallsCoverage/github/rce-3/xenith?style=for-the-badge&labelColor=%23282828&color=%23FEFEFE">
         </a>
     </div>
 </div>
