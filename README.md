@@ -1,3 +1,6 @@
+> [!WARNING]  
+> The project is currently paused as Xen is very hard to work with in nested environments, and KVM havn't merged yet their VMI API proposals.
+
 <p>
     <img src="xenith-website/static/images/xenith-banner-rounded.png" alt="Xenith banner" width="100%">
 </p>
