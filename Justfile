@@ -73,7 +73,11 @@ doctest package=build_package:
 [group("xenith")]
 [doc("Generate documentation for the project.")]
 generate-docs package=build_package:
-    {{ cargo }} doc {{ if package == "" { "--all" } else { "-p " + package } }} --no-deps --document-private-items
+     RUSTDOCFLAGS="$RUSTDOCFLAGS --enable-index-page -Zunstable-options --default-theme=ayu" {{ cargo }} +nightly doc \
+        {{ if package == "" { "--all" } else { "-p " + package } }} \
+        --workspace \
+        --no-deps \
+        --document-private-items
 
 [group("xenith")]
 [doc("Build project. Use release parameter for release builds. Use package parameter to build a specific package.")]

@@ -3,10 +3,9 @@
 ################################################################################
 
 [workspace]
-resolver = "2" # see https://doc.rust-lang.org/cargo/reference/resolver.html#resolver-versions
+resolver = "3" # see https://doc.rust-lang.org/cargo/reference/resolver.html#resolver-versions
 members = [
-    "xenith-core",
-    "xenith-vm",
+    "xenith-domain-management",
     "xenith-vmi",
     "xenith-cli",
     "xenith-debugger",
@@ -18,7 +17,7 @@ exclude = [ "xenith-website" ]
 
 [workspace.package]
 edition = "2024"
-rust-version = "1.85.0"
+rust-version = "1.94.1"
 license = "GPL-3.0"
 
 version = "0.1.0"
@@ -28,27 +27,47 @@ authors = ["abel <67806187+theo-abel@users.noreply.github.com>"]
 
 homepage = "<https://xenith.re>"
 documentation = "<https://xenith.re/docs/>"
-repository = "<https://github.com/rce-3/xenith/>"
+repository = "<https://github.com/theo-abel/xenith/>"
 
-keywords = ["virtualization", "detection", "vmi", "debugger", "xen", "hypervisor"]
+keywords = ["virtualization", "detection", "vmi", "debugger", "hypervisor"]
 
 [workspace.dependencies]
 # Those dependencies are shared across all packages,
 # so we define them here to avoid duplication.
 log = "0.4.25"
-thiserror = "2.0.11"
+thiserror = "2.0.18"
+
+################################################################################
+# Lint settings
+################################################################################
+
+[workspace.lints.clippy]
+# Enable pedantic lint group
+pedantic = "warn"
+# restriction = "warn" # TODO: enable when ready to suffer
+
+[workspace.lints.rust]
+# Deny all warnings
+warnings = "deny"
 
 ################################################################################
 # Profile settings
 ################################################################################
 
+[profile.bench]
+inherits = "release"
+
 [profile.release]
+opt-level = 3  # use better optimizations
+debug = true  # keep debug info in case of crash/bug
 # enable link-time optimization, which can improve performance
 # but also increase build time
 lto = true
 codegen-units = 1
-opt-level = 3 # use better optimizations
-debug = true # keep debug info in case of crash/bug
+
+[profile.mutants]
+inherits = "test"
+debug = "none"
 
 [profile.optimized-release]
 inherits = "release"

@@ -2,7 +2,8 @@
 tools:
   enable_sshd: true
   enable_partitioning: true
-  enable_libvirt: false
+  enable_libvirt: true
+  enable_rust: true
 
 shared_folder: "/vagrant"
 

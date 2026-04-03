@@ -257,39 +257,7 @@ You can do this by running the following command:
 ansible-galaxy collection install ansible.posix
 ```
 
-## Using Vagrant
-
-Now that you have all the necessary tools installed, you can clone the Xenith repository and setup the development environment quickly using Vagrant.
-
-```shell
-vagrant up
-```
-
-This command will start the virtual machine and provision it using Ansible. Once the process is complete, you can either :
-
-{{% steps %}}
-
-### SSH into the dom0 virtual machine
-
-```shell
-vagrant ssh
-```
-
-### Access the graphical display of the dom0 virtual machine using our custom Vagrant command
-
-```shell
-vagrant virt-viewer --dom0
-```
-
-### Access the graphical display of the dom0 virtual machine directly with `virt-viewer`
-
-```shell
-virt-manager --connect qemu:///system --show-domain-console xenith_xenith
-```
-
-{{% /steps %}}
-
-## Rust
+### Rust
 
 Rust is the programming language used to develop Xenith. You can install Rust on your system using the following commands:
 
@@ -339,7 +307,7 @@ Make sure to follow the instructions on the screen to add Rust to your `PATH`. Y
 
 {{< /tabs >}}
 
-## Just
+### Just
 
 > [!Note]
 > Just is a command runner with a Makefile-like syntax. It is used to automate tasks and run commands in a consistent manner. It is similar to Make, but with a simpler syntax and more features.
@@ -365,3 +333,35 @@ This is optional but recommended. Just is used to run commands in the project. Y
     {{< /tab >}}
 
 {{< /tabs >}}
+
+## Using Vagrant
+
+Now that you have all the necessary tools installed, you can clone the Xenith repository and setup the development environment quickly using Vagrant.
+
+```shell
+vagrant up
+```
+
+This command will start the virtual machine and provision it using Ansible. Once the process is complete, you can either :
+
+{{% steps %}}
+
+### SSH into the dom0 virtual machine
+
+```shell
+vagrant ssh
+```
+
+### Access the graphical display of the dom0 virtual machine using our custom Vagrant command
+
+```shell
+vagrant virt-viewer --dom0
+```
+
+### Access the graphical display of the dom0 virtual machine directly with `virt-viewer`
+
+```shell
+virt-manager --connect qemu:///system --show-domain-console xenith_xenith
+```
+
+{{% /steps %}}

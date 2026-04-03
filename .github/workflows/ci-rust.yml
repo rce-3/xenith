@@ -1,0 +1,145 @@
+name: Rust CI
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+      - dev
+    paths:
+      - "xenith-cli/**"
+      - "xenith-debugger/**"
+      - "xenith-domain-management/**"
+      - "xenith-gui/**"
+      - "xenith-redpill/**"
+      - "xenith-scripting/**"
+      - "xenith-vmi/**"
+  pull_request:
+    paths:
+      - "xenith-cli/**"
+      - "xenith-debugger/**"
+      - "xenith-domain-management/**"
+      - "xenith-gui/**"
+      - "xenith-redpill/**"
+      - "xenith-scripting/**"
+      - "xenith-vmi/**"
+
+# cancel in-progress runs on new commits to the same PR
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+env:
+  CARGO_TERM_COLOR: always
+  MAIN_BRANCH: main
+
+jobs:
+  security:
+    name: Security audit
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Run cargo-deny
+        # this action doesn't require a full Rust setup
+        uses: EmbarkStudios/cargo-deny-action@v2
+
+  build:
+    name: Build & lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Install Rust (nightly)
+        uses: dtolnay/rust-toolchain@nightly
+        with:
+          components: rustfmt, clippy
+
+      - name: Restore Cargo cache
+        uses: Swatinem/rust-cache@v2
+
+      - name: Run rustfmt
+        run: cargo fmt --all -- --check
+
+      - name: Run clippy
+        # dtolnay/rust-toolchain automatically adds problem matchers for annotations
+        run: cargo clippy --all-targets --all
+
+      - name: Check unused dependencies
+        uses: aig787/cargo-udeps-action@v1
+        with:
+          version: "latest"
+          args: "--all-targets"
+
+      - name: Build project
+        run: cargo build
+
+      - name: Generate documentation
+        run: cargo doc --no-deps --document-private-items
+
+  test:
+    name: Test suite
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Install Rust (nightly)
+        uses: dtolnay/rust-toolchain@nightly
+
+      - name: Restore Cargo cache
+        uses: Swatinem/rust-cache@v2
+
+      - name: Install nextest
+        uses: taiki-e/install-action@v2
+        with:
+          tool: nextest
+
+      - name: Install cargo-mutants
+        uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-mutants
+
+      - name: Run tests (nextest)
+        run: cargo nextest run --all
+
+      - name: Run doctests
+        run: cargo test --doc
+
+      - name: Run mutation tests (main branch or manual dispatch)
+        # this is a *very slow* step, we only run it on main or manually
+        if: ${{ github.event_name == 'workflow_dispatch' || github.ref == format('refs/heads/{0}', env.MAIN_BRANCH) }}
+        run: |
+          cargo mutants -vV --in-place \
+            -- --all-features --lib --tests \
+            -- -Zunstable-options --fail-fast
+
+      - name: Upload mutants output
+        # this will only run if the previous mutation test step ran
+        if: ${{ always() && (github.event_name == 'workflow_dispatch' || github.ref == format('refs/heads/{0}', env.MAIN_BRANCH)) }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: mutants-out
+          path: mutants.out
+
+  # only runs on main branch or manual dispatch
+  coverage:
+    name: Coverage
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch'
+    container:
+      image: xd009642/tarpaulin:develop-nightly
+      options: --security-opt seccomp=unconfined
+
+    steps:
+      - name: Checkout repository
+
+        if: ${{ github.ref == format('refs/heads/{0}', env.MAIN_BRANCH) }}
+        uses: actions/checkout@v6
+
+      - name: Generate code coverage
+        if: ${{ github.ref == format('refs/heads/{0}', env.MAIN_BRANCH) }}
+        run: |
+          cargo +nightly tarpaulin --verbose --all-features --workspace --timeout 120 --exclude-files **/examples/*.rs

@@ -10,3 +10,7 @@
 - name: Install libvirt
   ansible.builtin.include_tasks: libvirt.yml
   when: tools.enable_libvirt
+
+- name: Install Rust
+  ansible.builtin.include_tasks: rust.yml
+  when: tools.enable_rust

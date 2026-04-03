@@ -13,9 +13,13 @@
     - htop
     - vim
     - wget
+    - curl
     - build-essential
     - python3
     - python3-dev
+    - clang
+    - llvm
+    - lld
 
 - name: Create xenith user
   ansible.builtin.user:

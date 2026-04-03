@@ -1,4 +1,0 @@
-[submodule "xen"]
-	path = xen
-	url = https://gitlab.com/xen-project/hardware/xen.git
-	branch = stable-4.19

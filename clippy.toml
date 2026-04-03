@@ -1,0 +1,16 @@
+# Clippy configuration for filip
+
+# Cognitive complexity threshold for functions
+cognitive-complexity-threshold = 25
+
+# Maximum number of lines for a function
+too-many-lines-threshold = 32
+
+# Maximum number of arguments for a function
+too-many-arguments-threshold = 6
+
+# Type complexity threshold
+type-complexity-threshold = 250
+
+# Stack size threshold in bytes
+stack-size-threshold = 512000

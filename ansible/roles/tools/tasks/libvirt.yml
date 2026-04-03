@@ -4,6 +4,7 @@
     name: "{{ item }}"
   with_items:
     - libvirt-daemon-system
+    - libvirt-dev
 
 - name: Add user to libvirt group
   ansible.builtin.user:

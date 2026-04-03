@@ -1,0 +1,13 @@
+---
+# Note: Rustup will be available in Debian packages starting with Debian 13 (Trixie).
+- name: Download Rustup installation script
+  ansible.builtin.get_url:
+    url: https://sh.rustup.rs
+    dest: /tmp/rustup-init.sh
+    mode: "0755"
+
+- name: Install Rustup
+  ansible.builtin.command: /tmp/rustup-init.sh -y
+  register: rustup_install
+  changed_when: rustup_install.rc == 0
+  failed_when: rustup_install.rc != 0

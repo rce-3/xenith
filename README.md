@@ -40,6 +40,12 @@ You can view the full online documentation [here](https://xenith.re) or build it
 
 See [xenith-website](xenith-website) for more information.
 
+## 👥 Community
+
+Join our community on [Discord](https://discord.gg/s9Rv5Uzx) to discuss, ask questions, and share your experiences with Xenith.
+
+<iframe src="https://discord.com/widget?id=1333254838481584129&theme=dark" width="350" height="500" allowtransparency="true" frameborder="0" sandbox="allow-popups allow-popups-to-escape-sandbox allow-same-origin allow-scripts"></iframe>
+
 ## 🔗 Credits
 
 See documentation [credits](https://xenith.re/docs/credits/).
