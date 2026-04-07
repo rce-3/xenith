@@ -31,18 +31,18 @@ jobs:
   build:
     runs-on: ubuntu-latest
     env:
-      HUGO_VERSION: 0.144.2
+      HUGO_VERSION: 0.160.0
 
     steps:
       - name: Checkout
         uses: actions/checkout@v5
         with:
-          fetch-depth: 0  # fetch all history for .GitInfo and .Lastmod
+          fetch-depth: 0 # fetch all history for .GitInfo and .Lastmod
           submodules: recursive
       - name: Setup Go
         uses: actions/setup-go@v6
         with:
-          go-version: '1.24'
+          go-version: "1.26"
       - name: Setup Pages
         id: pages
         uses: actions/configure-pages@v5
