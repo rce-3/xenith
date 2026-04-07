@@ -3,13 +3,13 @@ name = "xenith-redpill-macros"
 description = "A derive macro for the xenith-redpill crate"
 
 version = "0.1.0"
-edition = "2021"
+edition = "2024"
 
-homepage = "<https://theo-abel.github.io/xenith/>"
+homepage = "<https://xenith.re>"
 repository = "<https://github.com/theo-abel/xenith/>"
 
 keywords = ["virtualization", "detection"]
-license = "GPL-3.0"
+license = "GPL-3.0-or-later"
 
 authors = ["abel <67806187+theo-abel@users.noreply.github.com>"]
 

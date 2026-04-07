@@ -1,9 +1,5 @@
 [graph]
-targets = [
-    "x86_64-unknown-linux-gnu",
-    "aarch64-apple-darwin",
-    "x86_64-pc-windows-gnu"
-]
+targets = ["x86_64-unknown-linux-gnu"]
 
 # If true, metadata will be collected with `--all-features`. Note that this can't
 # be toggled off if true, if you want to conditionally enable `--all-features` it
@@ -28,16 +24,13 @@ ignore = [
 
 [licenses]
 allow = [
+    "GPL-3.0-or-later",
     "MIT",
     "Apache-2.0",
     "Unicode-3.0",
-    "Zlib",
-    "BSL-1.0",
     "MPL-2.0",
-    "OpenSSL",
-    "ISC",
-    "BSD-3-Clause",
-    "CDLA-Permissive-2.0"
+    "LGPL-2.1",
+    "LGPL-3.0",
 ]
 confidence-threshold = 0.9
 exceptions = []
