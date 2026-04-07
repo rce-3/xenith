@@ -6,9 +6,11 @@ weight: 102
 
 ## Projects
 
-- [Xen Hypervisor](https://xenproject.org/projects/hypervisor/) : the base of the project, nothing would be possible without it.
-- [vagrant-xen](https://github.com/Wenzel/vagrant-xen/) by [@Wenzel](https://github.com/Wenzel) : we heavily relied on it to create the initial development environment.
-- [baseliner](https://git.sr.ht/~lucidone/baseliner) and [packer-build](https://github.com/tylert/packer-build/) : we relied on it to automatically create domUs images with Packer/QEMU and Ansible.
+- [memflow](https://github.com/memflow/memflow) — physical memory introspection framework used as the VMI backend.
+- [gdbstub](https://github.com/daniel5151/gdbstub) — GDB Remote Serial Protocol implementation in Rust, used for the debugger server.
+- [pyvmidbg](https://github.com/Wenzel/pyvmidbg) by [@Wenzel](https://github.com/Wenzel) — concept inspiration for the VMI-backed GDB RSP server.
+- [packer-build](https://github.com/tylert/packer-build/) — base for the Packer/QEMU guest image build templates.
+- [cloud-hypervisor](https://github.com/cloud-hypervisor/cloud-hypervisor) and [rust-vmm](https://github.com/rust-vmm) — reference implementations studied for VMM architecture.
 
 ## People
 

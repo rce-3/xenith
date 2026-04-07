@@ -1,6 +1,6 @@
 ---
 title: Xenith
-description: Xenith is a lightweight, stealth hypervisor debugger environment for researchers and developers built on Xen.
+description: Xenith is a QEMU/KVM-based hypervisor toolkit for security research — stealth VMs, VMI, and guest-transparent debugging.
 layout: hextra-home
 ---
 
@@ -17,7 +17,7 @@ layout: hextra-home
 
 <div class="hx-mb-12">
 {{< hextra/hero-subtitle >}}
-  Lightweight, stealth hypervisor debugger environment&nbsp;<br class="sm:hx-block hx-hidden" />for researchers and developers built on [Xen](https://xenproject.org/projects/hypervisor/)
+  QEMU/KVM-based hypervisor toolkit&nbsp;<br class="sm:hx-block hx-hidden" />for security research and reverse engineering
 {{< /hextra/hero-subtitle >}}
 </div>
 
@@ -31,7 +31,7 @@ layout: hextra-home
 {{< hextra/feature-grid >}}
   {{< hextra/feature-card
     title="Powerful CLI"
-    subtitle="Xenith provides a powerful command-line interface to interact with the hypervisor and manage your virtual machines."
+    subtitle="Xenith provides a powerful command-line interface to manage VMs, attach debuggers, and run analysis scripts."
     icon="terminal"
     class="hx-aspect-auto md:hx-aspect-[1.1/1] max-md:hx-min-h-[340px]"
     image="images/xenith-cli.png"
@@ -40,7 +40,7 @@ layout: hextra-home
   >}}
   {{< hextra/feature-card
     title="Virtual Machine Introspection"
-    subtitle="VMI allows you to inspect and edit the memory and CPU state of a virtual machine, hook anything with semantic context."
+    subtitle="Read and write guest memory and CPU registers from the host with no agent inside the guest. OS-aware: enumerate processes, modules, and resolve symbols."
     icon="search"
     class="hx-aspect-auto md:hx-aspect-[1.1/1] max-lg:hx-min-h-[340px]"
     image=""
@@ -49,7 +49,7 @@ layout: hextra-home
   >}}
   {{< hextra/feature-card
     title="Stealth"
-    subtitle="Designed to be hard to detect, based on state-of-the-art techniques to avoid detection by malware and proprietary software."
+    subtitle="CPUID masking, SMBIOS/ACPI spoofing, timing normalization. Guest software cannot distinguish the VM from real hardware."
     icon="eye"
     class="hx-aspect-auto md:hx-aspect-[1.1/1] max-md:hx-min-h-[340px]"
     image=""
@@ -57,20 +57,20 @@ layout: hextra-home
     style="background: radial-gradient(ellipse at 10% 90%,#232323,hsla(0,0%,100%,0));"
   >}}
   {{< hextra/feature-card
-    title="Compatible with multiple debuggers"
-    subtitle="Debug your virtual machines with your favorite debugger, such as GDB, LLDB, WinDbg with their appropriate stubs."
+    title="Compatible with any debugger"
+    subtitle="GDB RSP server backed by VMI. Connect with GDB, LLDB, IDA Pro, pwndbg, Binary Ninja, or WinDbg. The guest has no knowledge of the debugger."
     icon="cube-transparent"
     style="background: radial-gradient(ellipse at 10% 90%,#232323,hsla(0,0%,100%,0));"
   >}}
   {{< hextra/feature-card
-    title="Scriptable"
-    subtitle="Automate your tasks with the powerful scripting capabilities of Xenith, using Rust or Python."
+    title="Python scripting API"
+    subtitle="Interactive REPL and full Python API. Set breakpoints, scan memory, enumerate processes, and automate multi-step analysis workflows."
     icon="code"
     style="background: radial-gradient(ellipse at 10% 90%,#232323,hsla(0,0%,100%,0));"
   >}}
   {{< hextra/feature-card
     title="Snapshot and Restore"
-    subtitle="Save the state of your virtual machine and restore it later, useful for debugging and testing."
+    subtitle="Capture and restore VM state at any point. Ideal for repeatable malware analysis and fuzzing workflows."
     icon="camera"
     style="background: radial-gradient(ellipse at 10% 90%,#232323,hsla(0,0%,100%,0));"
   >}}
@@ -81,7 +81,7 @@ layout: hextra-home
 {{< hextra/feature-grid cols="1">}}
   {{< hextra/feature-card
     title="Friendly GUI"
-    subtitle="Access your favorites features with a friendly graphical user interface."
+    subtitle="Access your favourite features with a friendly graphical user interface."
     icon="desktop-computer"
     style="background: radial-gradient(ellipse at 10% 90%,#232323,hsla(0,0%,100%,0));"
   >}}

@@ -4,56 +4,98 @@ type: docs
 weight: 30
 ---
 
-Xenith aims to be installed on a single server or workstation. Design goals are to ease the usage of provided tools and to provide a simple and clear architecture. The architecture is designed to be modular, allowing for easy integration of new tools and components.
+Xenith is designed to run on a single Linux workstation or server with KVM support. The architecture is modular — each crate has a single responsibility and exposes a clear API. Crates communicate in-process; there are no daemons or IPC sockets.
 
-The actual architecture is composed of several components, each with its own responsibilities. The main components are:
+## Crate overview
 
-- `xenithd-dm`: The domain manager service, responsible for managing the lifecycle of domains and their resources through libvirt. This includes creating, starting, stopping, destroying, taking snapshots of domains, as well as managing their resources such as CPU, memory, and storage.
-- `xenithd-vmi`: The virtual machine introspection (VMI) service, responsible for collecting, modifying and analyzing data from the virtual machines. This provides the core functionality of Xenith. It communicates with the Xen daemons to provide VMI capabilities.
-- `xenithd-debugging`: The debugging service, responsible for providing debugging capabilities to the user. This includes the ability to set breakpoints, inspect memory, and modify the execution of the virtual machine through multiple debugging stubs.
-
-All services expose a gRPC API, allowing for easy integration with other tools and components. Services communicate with each other through zero-copy IPC sockets, allowing for efficient data transfer and low latency.
-
-![xenith-architecture](./xenith-diagram.drawio.png)
-
-## Domain Management
-
-Domain management is done through the `xenithd-dm` service. This service is responsible for managing the lifecycle of domains and their resources through libvirt. The main responsibilities of this service are:
-
-- Creating, starting, stopping, destroying, and taking snapshots of domains.
-- Managing the resources of domains, such as CPU, memory, and storage.
-- Managing the configuration of domains, such as network interfaces, storage devices, and other resources.
-- Creating and managing disk images for domains.
-
-This is the only service that uses the `/xenith` directory. The directory is structured as follows:
-
-```sh
-/xenith
-    /images
-        # Contains all cached isos with their checksums
-    /domains
-        /debian12-default # is the domain name
-            domain.xml # libvirt configuration file
-            /disks
-                debian12-default.qcow2 # generated image disk
-                /snapshots
-                    # contains all disk snapshots
-            /templates
-                debian-default.pkr.hcl # packer image template
-                template-variables.hcl # generated image variables
-
-        /windows11-default
-            ...
-    /ansible
-        # copy of project's ./ansible, to be used by packer provisioning
+```
+xenith-vm        VM lifecycle management (QEMU/KVM, QMP protocol)
+xenith-stealth   Anti-detection layer (CPUID, SMBIOS, ACPI, timing, PCI)
+xenith-vmi       Physical memory introspection (memflow-qemu / memflow-kvm)
+xenith-os        OS-aware parsing (Windows EPROCESS, Linux task_struct)
+xenith-debugger  GDB RSP server backed by VMI (guest-transparent debugging)
+xenith-scripting Python REPL and API (pyo3)
+xenith-redpill   VM detection test suite (validates stealth layer)
+xenith-cli       Command-line interface
+xenith-gui       Graphical interface (planned)
 ```
 
-This directory does not follow classic Linux filesystem hierarchy standards for clarity and easy access purposes (it is the only exception, every other configuration files are stored in `/etc`). It is designed to be used by the `xenithd-dm` service and should not be modified manually. The directory is created when the `xenithd-dm` service is started for the first time.
+## VM Management (`xenith-vm`)
 
-## Virtual Machine Introspection
+`xenith-vm` is responsible for the full lifecycle of guest VMs. It spawns QEMU processes with computed arguments and communicates with them via the QMP socket (JSON over Unix socket).
 
-This part of documentation is to be written.
+Responsibilities:
+- Creating, starting, stopping, pausing, resuming, and deleting VMs
+- Managing disk images (QCOW2 via `qemu-img`)
+- Snapshots (`savevm` / `loadvm` / `delvm` via QMP)
+- Display configuration (SDL, VNC)
+- Accepting a stealth configuration from `xenith-stealth` as extra QEMU arguments
 
-## Debugging
+The `/xenith` directory layout:
 
-This part of documentation is to be written.
+```
+/xenith
+    /images          # cached ISO files
+    /vms
+        /debian12-analysis
+            vm.toml          # VM configuration
+            /disks
+                debian12.qcow2
+            /snapshots       # QCOW2 internal snapshots
+        /windows11-malware
+            ...
+```
+
+## Stealth (`xenith-stealth`)
+
+`xenith-stealth` generates a coherent fake hardware identity and translates it into QEMU arguments. It is consumed by `xenith-vm` at launch time.
+
+Techniques implemented:
+- **CPUID masking** — hides hypervisor present bit, spoofs vendor string, masks KVM leaves
+- **SMBIOS/DMI spoofing** — type 0/1/2/3 tables with plausible values
+- **ACPI customization** — removes QEMU-identifying strings from FACP/MADT
+- **Timing normalization** — TSC passthrough, invariant TSC, disables `kvmclock`
+- **PCI/USB device ID masking** — presents virtio devices as real hardware
+
+## Virtual Machine Introspection (`xenith-vmi`, `xenith-os`)
+
+`xenith-vmi` provides raw physical memory and register access from the host without any agent in the guest. It supports two backends:
+
+| Backend | Mechanism | Kernel module |
+|---|---|---|
+| `memflow-qemu` | `/proc/[qemu_pid]/mem` | None (default) |
+| `memflow-kvm` | KVM ioctl | Optional LKM |
+
+`xenith-os` bridges the semantic gap: it parses kernel data structures to expose OS-level objects (processes, modules, symbols) rather than raw addresses. Versioned structure offset profiles handle differences across kernel versions.
+
+## Debugger (`xenith-debugger`)
+
+`xenith-debugger` implements a **GDB Remote Serial Protocol (RSP) server** backed by `xenith-vmi`. Any GDB-compatible debugger connects to it — GDB, LLDB, IDA Pro, pwndbg, WinDbg (via EXDI). The guest has no knowledge of the debugger.
+
+This is the Rust equivalent of the archived [pyvmidbg](https://github.com/Wenzel/pyvmidbg) project.
+
+Capabilities exposed over GDB RSP:
+- Register read/write
+- Memory read/write
+- Software breakpoints (INT3 injection)
+- Hardware breakpoints (DR0-DR3)
+- Single-step
+- `monitor` commands: `proc list`, `mod list`, `sym <name>`
+
+## Scripting (`xenith-scripting`)
+
+`xenith-scripting` exposes the full Xenith API as a Python module via `pyo3`. It provides an interactive REPL for live analysis and supports script file execution.
+
+```python
+import xenith
+
+proc = xenith.proc.get_by_name("malware.exe")
+xenith.dbg.bp(proc, proc.base_address + 0x1337)
+xenith.dbg.cont()
+xenith.dbg.wait()
+print(xenith.regs.get("rip"))
+```
+
+## Stealth validation loop
+
+`xenith-redpill` runs inside the guest VM and attempts to detect the hypervisor using a suite of techniques (CPUID, timing, MSR, ACPI). A correctly configured `xenith-stealth` profile should cause all techniques to return `NotDetected`. This creates a feedback loop for validating and improving the stealth layer.
