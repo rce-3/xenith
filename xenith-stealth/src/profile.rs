@@ -1,3 +1,4 @@
+use mac_addr::MacAddr;
 use rand::Rng;
 use serde::{Deserialize, Serialize};
 
@@ -28,8 +29,8 @@ pub struct HardwareProfile {
     pub board_product: String,
     /// Base board serial number.
     pub board_serial: String,
-    /// MAC address for the primary NIC (colon-separated).
-    pub mac_address: String,
+    /// MAC address for the primary NIC.
+    pub mac_address: MacAddr,
 }
 
 /// Predefined plausible hardware identities to sample from.
@@ -44,6 +45,7 @@ struct HwTemplate {
     board_product: &'static str,
 }
 
+// TODO: move this into a dedicated template file, embedded at compile time
 const TEMPLATES: &[HwTemplate] = &[
     HwTemplate {
         cpu_vendor: "GenuineIntel",
@@ -117,13 +119,7 @@ fn random_serial(rng: &mut impl Rng, len: usize) -> String {
         .collect()
 }
 
-fn random_mac(rng: &mut impl Rng) -> String {
-    // Use a locally administered, unicast OUI: 52:54:xx:xx:xx:xx
-    format!(
-        "52:54:{:02x}:{:02x}:{:02x}:{:02x}",
-        rng.random::<u8>(),
-        rng.random::<u8>(),
-        rng.random::<u8>(),
-        rng.random::<u8>(),
-    )
+fn random_mac(rng: &mut impl Rng) -> MacAddr {
+    // Locally administered, unicast OUI: 52:54:xx:xx:xx:xx
+    MacAddr::new(0x52, 0x54, rng.random(), rng.random(), rng.random(), rng.random())
 }

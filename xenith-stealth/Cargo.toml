@@ -20,3 +20,4 @@ workspace = true
 serde     = { workspace = true }
 thiserror = { workspace = true }
 rand      = "0.9"
+mac-addr  = { workspace = true }
