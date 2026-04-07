@@ -1,0 +1,92 @@
+# Hardware identity templates for xenith-stealth.
+#
+# Top-level structure
+# -------------------
+# ouis      : pool of real NIC vendor OUI prefixes. One is sampled at random
+#             to form the first three bytes of the spoofed MAC address.
+#             The last three bytes are always randomised.
+#
+# platforms : list of hardware platforms. A platform groups components that are
+#             physically compatible (Intel LGA + Intel CPUs, AMD AM4/AM5 + AMD
+#             CPUs). Mixing across platforms produces incoherent profiles that
+#             anti-VM checks can detect.
+#
+# Within a platform, `cpus` and `boards` are independent pools. At runtime one
+# CPU and one board are sampled separately, giving N×M distinct profiles per
+# platform without N×M template entries.
+#
+# Adding entries
+# --------------
+# New OUI     : add a { vendor, oui } entry. `oui` must be a real, registered
+#               NIC vendor prefix in "XX:XX:XX" hex format. Never use 52:54
+#               (QEMU default) or other locally-administered prefixes.
+#
+# New CPU     : add a { vendor, model } entry under the matching platform's
+#               `cpus` list. It pairs automatically with every existing board.
+#
+# New board   : add a full board entry under `boards`. `bios_version` must
+#               match the real string shipped by that manufacturer (GIGABYTE
+#               uses "F"-prefixed strings, ASUS uses numeric strings, etc.).
+#
+# New platform: add a top-level entry with at least one cpu and one board.
+#
+# Field reference
+# ---------------
+# ouis[].vendor             : human-readable NIC vendor label (not parsed)
+# ouis[].oui                : 3-byte OUI in "XX:XX:XX" hex format
+# platforms[].platform      : human-readable label (not parsed)
+# platforms[].cpus[].vendor : CPUID vendor string ("GenuineIntel" / "AuthenticAMD")
+# platforms[].cpus[].model  : CPUID brand string as reported by the CPU
+# platforms[].boards[].system_*    : DMI type 1 (System Information) fields
+# platforms[].boards[].board_*     : DMI type 2 (Base Board) fields
+# platforms[].boards[].bios_vendor : DMI type 0 — almost always an AMI variant
+# platforms[].boards[].bios_version: DMI type 0 — board-specific, must be authentic
+
+ouis:
+  - vendor: Intel
+    oui: "00:1B:21"
+  - vendor: Realtek
+    oui: "00:E0:4C"
+  - vendor: Realtek 2.5G
+    oui: "D8:BB:C1"
+
+platforms:
+  - platform: intel
+    cpus:
+      - vendor: GenuineIntel
+        model: "Intel(R) Core(TM) i7-10700K CPU @ 3.80GHz"
+      - vendor: GenuineIntel
+        model: "Intel(R) Core(TM) i9-12900K CPU @ 3.20GHz"
+    boards:
+      - system_manufacturer: GIGABYTE
+        system_product: Z490 AORUS ELITE
+        board_manufacturer: GIGABYTE
+        board_product: Z490 AORUS ELITE
+        bios_vendor: "American Megatrends Inc."
+        bios_version: F14
+      - system_manufacturer: "ASUSTeK COMPUTER INC."
+        system_product: "ROG STRIX Z690-E GAMING WIFI"
+        board_manufacturer: "ASUSTeK COMPUTER INC."
+        board_product: "ROG STRIX Z690-E GAMING WIFI"
+        bios_vendor: "American Megatrends International, LLC."
+        bios_version: "1602"
+
+  - platform: amd
+    cpus:
+      - vendor: AuthenticAMD
+        model: "AMD Ryzen 9 5900X 12-Core Processor"
+      - vendor: AuthenticAMD
+        model: "AMD Ryzen 7 5800X 8-Core Processor"
+    boards:
+      - system_manufacturer: "Micro-Star International Co., Ltd."
+        system_product: MEG X570 UNIFY
+        board_manufacturer: "Micro-Star International Co., Ltd."
+        board_product: "MEG X570 UNIFY (MS-7C35)"
+        bios_vendor: "American Megatrends Inc."
+        bios_version: "3003"
+      - system_manufacturer: GIGABYTE
+        system_product: X570 AORUS MASTER
+        board_manufacturer: GIGABYTE
+        board_product: X570 AORUS MASTER
+        bios_vendor: "American Megatrends Inc."
+        bios_version: F35

@@ -1,16 +1,18 @@
 use thiserror::Error;
 
 #[derive(Debug, Error)]
-pub enum StealthError {
-    #[error("profile generation failed: {0}")]
-    ProfileGeneration(String),
+pub enum Error {
+    #[error("profile generation failed: {reason}")]
+    ProfileGeneration { reason: String },
 
-    #[error("CPUID configuration error: {0}")]
-    Cpuid(String),
+    #[error("CPUID configuration error: {reason}")]
+    Cpuid { reason: String },
 
-    #[error("SMBIOS configuration error: {0}")]
-    Smbios(String),
+    #[error("SMBIOS configuration error: {reason}")]
+    Smbios { reason: String },
 
-    #[error("ACPI configuration error: {0}")]
-    Acpi(String),
+    #[error("ACPI configuration error: {reason}")]
+    Acpi { reason: String },
 }
+
+pub type Result<T> = std::result::Result<T, Error>;

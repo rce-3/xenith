@@ -1,6 +1,81 @@
+use std::sync::OnceLock;
+
 use mac_addr::MacAddr;
 use rand::Rng;
 use serde::{Deserialize, Serialize};
+
+/// A CPU vendor + model pair. CPU selection is independent of the board within
+/// the same platform, so these are pooled separately.
+#[derive(Debug, Deserialize)]
+struct CpuTemplate {
+    vendor: String,
+    model: String,
+}
+
+/// A board identity: system info, board info, and the associated BIOS strings.
+/// BIOS version strings are board-specific, so they stay coupled to the board.
+#[derive(Debug, Deserialize)]
+struct BoardTemplate {
+    system_manufacturer: String,
+    system_product: String,
+    board_manufacturer: String,
+    board_product: String,
+    bios_vendor: String,
+    bios_version: String,
+}
+
+/// A hardware platform (Intel or AMD) with independent CPU and board pools.
+/// Sampling one CPU and one board from the same platform guarantees coherence.
+#[derive(Debug, Deserialize)]
+struct PlatformTemplate {
+    cpus: Vec<CpuTemplate>,
+    boards: Vec<BoardTemplate>,
+}
+
+/// A real NIC vendor OUI prefix. The last three bytes of the MAC are random.
+#[derive(Debug, Deserialize)]
+struct OuiTemplate {
+    /// Human-readable vendor label (e.g. `"Intel"`). Not used at runtime.
+    #[allow(dead_code)]
+    vendor: String,
+    /// First three octets of the MAC in `"XX:XX:XX"` hex format.
+    oui: String,
+}
+
+impl OuiTemplate {
+    /// Parse the OUI string into raw bytes.
+    fn bytes(&self) -> [u8; 3] {
+        let mut parts = self.oui.splitn(3, ':');
+        let mut next = || {
+            let h = parts.next().expect("OUI must be XX:XX:XX");
+            u8::from_str_radix(h, 16).expect("OUI must be valid hex")
+        };
+        [next(), next(), next()]
+    }
+}
+
+/// Root of `templates.yaml`: OUI pool and platform list.
+#[derive(Debug, Deserialize)]
+struct Templates {
+    ouis: Vec<OuiTemplate>,
+    platforms: Vec<PlatformTemplate>,
+}
+
+static TEMPLATES: OnceLock<Templates> = OnceLock::new();
+
+fn templates() -> &'static Templates {
+    TEMPLATES.get_or_init(|| {
+        serde_yml::from_str(include_str!("../templates.yaml")).expect("templates.yaml is malformed")
+    })
+}
+
+fn platforms() -> &'static [PlatformTemplate] {
+    &templates().platforms
+}
+
+fn ouis() -> &'static [OuiTemplate] {
+    &templates().ouis
+}
 
 /// A coherent fake hardware identity for a VM.
 ///
@@ -10,105 +85,118 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct HardwareProfile {
     /// CPU vendor string (e.g. `"GenuineIntel"`).
-    pub cpu_vendor: String,
+    cpu_vendor: String,
     /// CPU model string (e.g. `"Intel(R) Core(TM) i7-10700K CPU @ 3.80GHz"`).
-    pub cpu_model: String,
+    cpu_model: String,
     /// BIOS vendor (e.g. `"American Megatrends Inc."`).
-    pub bios_vendor: String,
+    bios_vendor: String,
     /// BIOS version string (e.g. `"F14"`).
-    pub bios_version: String,
+    bios_version: String,
     /// System manufacturer (e.g. `"GIGABYTE"`).
-    pub system_manufacturer: String,
+    system_manufacturer: String,
     /// System product name (e.g. `"Z490 AORUS ELITE"`).
-    pub system_product: String,
+    system_product: String,
     /// System serial number (randomised hex).
-    pub system_serial: String,
+    system_serial: String,
     /// Base board manufacturer.
-    pub board_manufacturer: String,
+    board_manufacturer: String,
     /// Base board product name.
-    pub board_product: String,
+    board_product: String,
     /// Base board serial number.
-    pub board_serial: String,
+    board_serial: String,
     /// MAC address for the primary NIC.
-    pub mac_address: MacAddr,
+    mac_address: MacAddr,
 }
-
-/// Predefined plausible hardware identities to sample from.
-struct HwTemplate {
-    cpu_vendor: &'static str,
-    cpu_model: &'static str,
-    bios_vendor: &'static str,
-    bios_version: &'static str,
-    system_manufacturer: &'static str,
-    system_product: &'static str,
-    board_manufacturer: &'static str,
-    board_product: &'static str,
-}
-
-// TODO: move this into a dedicated template file, embedded at compile time
-const TEMPLATES: &[HwTemplate] = &[
-    HwTemplate {
-        cpu_vendor: "GenuineIntel",
-        cpu_model: "Intel(R) Core(TM) i7-10700K CPU @ 3.80GHz",
-        bios_vendor: "American Megatrends Inc.",
-        bios_version: "F14",
-        system_manufacturer: "GIGABYTE",
-        system_product: "Z490 AORUS ELITE",
-        board_manufacturer: "GIGABYTE",
-        board_product: "Z490 AORUS ELITE",
-    },
-    HwTemplate {
-        cpu_vendor: "GenuineIntel",
-        cpu_model: "Intel(R) Core(TM) i9-12900K CPU @ 3.20GHz",
-        bios_vendor: "American Megatrends International, LLC.",
-        bios_version: "1602",
-        system_manufacturer: "ASUSTeK COMPUTER INC.",
-        system_product: "ROG STRIX Z690-E GAMING WIFI",
-        board_manufacturer: "ASUSTeK COMPUTER INC.",
-        board_product: "ROG STRIX Z690-E GAMING WIFI",
-    },
-    HwTemplate {
-        cpu_vendor: "AuthenticAMD",
-        cpu_model: "AMD Ryzen 9 5900X 12-Core Processor",
-        bios_vendor: "American Megatrends Inc.",
-        bios_version: "3003",
-        system_manufacturer: "Micro-Star International Co., Ltd.",
-        system_product: "MEG X570 UNIFY",
-        board_manufacturer: "Micro-Star International Co., Ltd.",
-        board_product: "MEG X570 UNIFY (MS-7C35)",
-    },
-    HwTemplate {
-        cpu_vendor: "AuthenticAMD",
-        cpu_model: "AMD Ryzen 7 5800X 8-Core Processor",
-        bios_vendor: "American Megatrends Inc.",
-        bios_version: "F35",
-        system_manufacturer: "GIGABYTE",
-        system_product: "X570 AORUS MASTER",
-        board_manufacturer: "GIGABYTE",
-        board_product: "X570 AORUS MASTER",
-    },
-];
 
 impl HardwareProfile {
     /// Generate a randomised but internally consistent hardware profile.
     #[must_use]
     pub fn generate() -> Self {
         let mut rng = rand::rng();
-        let tpl = &TEMPLATES[rng.random_range(0..TEMPLATES.len())];
+        let plats = platforms();
+        let plat = &plats[rng.random_range(0..plats.len())];
+        let cpu = &plat.cpus[rng.random_range(0..plat.cpus.len())];
+        let board = &plat.boards[rng.random_range(0..plat.boards.len())];
 
         Self {
-            cpu_vendor: tpl.cpu_vendor.to_owned(),
-            cpu_model: tpl.cpu_model.to_owned(),
-            bios_vendor: tpl.bios_vendor.to_owned(),
-            bios_version: tpl.bios_version.to_owned(),
-            system_manufacturer: tpl.system_manufacturer.to_owned(),
-            system_product: tpl.system_product.to_owned(),
+            cpu_vendor: cpu.vendor.clone(),
+            cpu_model: cpu.model.clone(),
+            bios_vendor: board.bios_vendor.clone(),
+            bios_version: board.bios_version.clone(),
+            system_manufacturer: board.system_manufacturer.clone(),
+            system_product: board.system_product.clone(),
             system_serial: random_serial(&mut rng, 10),
-            board_manufacturer: tpl.board_manufacturer.to_owned(),
-            board_product: tpl.board_product.to_owned(),
+            board_manufacturer: board.board_manufacturer.clone(),
+            board_product: board.board_product.clone(),
             board_serial: random_serial(&mut rng, 8),
             mac_address: random_mac(&mut rng),
         }
+    }
+
+    /// CPU vendor string reported by CPUID (e.g. `"GenuineIntel"`).
+    #[must_use]
+    pub fn cpu_vendor(&self) -> &str {
+        &self.cpu_vendor
+    }
+
+    /// CPU model string (e.g. `"Intel(R) Core(TM) i7-10700K CPU @ 3.80GHz"`).
+    #[must_use]
+    pub fn cpu_model(&self) -> &str {
+        &self.cpu_model
+    }
+
+    /// BIOS vendor (e.g. `"American Megatrends Inc."`).
+    #[must_use]
+    pub fn bios_vendor(&self) -> &str {
+        &self.bios_vendor
+    }
+
+    /// BIOS version string (e.g. `"F14"`).
+    #[must_use]
+    pub fn bios_version(&self) -> &str {
+        &self.bios_version
+    }
+
+    /// System manufacturer (e.g. `"GIGABYTE"`).
+    #[must_use]
+    pub fn system_manufacturer(&self) -> &str {
+        &self.system_manufacturer
+    }
+
+    /// System product name (e.g. `"Z490 AORUS ELITE"`).
+    #[must_use]
+    pub fn system_product(&self) -> &str {
+        &self.system_product
+    }
+
+    /// System serial number.
+    #[must_use]
+    pub fn system_serial(&self) -> &str {
+        &self.system_serial
+    }
+
+    /// Base board manufacturer.
+    #[must_use]
+    pub fn board_manufacturer(&self) -> &str {
+        &self.board_manufacturer
+    }
+
+    /// Base board product name.
+    #[must_use]
+    pub fn board_product(&self) -> &str {
+        &self.board_product
+    }
+
+    /// Base board serial number.
+    #[must_use]
+    pub fn board_serial(&self) -> &str {
+        &self.board_serial
+    }
+
+    /// MAC address for the primary NIC.
+    #[must_use]
+    pub fn mac_address(&self) -> MacAddr {
+        self.mac_address
     }
 }
 
@@ -120,6 +208,26 @@ fn random_serial(rng: &mut impl Rng, len: usize) -> String {
 }
 
 fn random_mac(rng: &mut impl Rng) -> MacAddr {
-    // Locally administered, unicast OUI: 52:54:xx:xx:xx:xx
-    MacAddr::new(0x52, 0x54, rng.random(), rng.random(), rng.random(), rng.random())
+    let ouis = ouis();
+    let oui = ouis[rng.random_range(0..ouis.len())].bytes();
+    MacAddr::new(
+        oui[0],
+        oui[1],
+        oui[2],
+        rng.random(),
+        rng.random(),
+        rng.random(),
+    )
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn generate_returns_valid_profile() {
+        let p = HardwareProfile::generate();
+        assert!(!p.cpu_vendor().is_empty());
+        assert!(!p.mac_address().to_string().starts_with("52:54"));
+    }
 }
