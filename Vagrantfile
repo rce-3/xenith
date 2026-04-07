@@ -1,16 +1,16 @@
-# Xenith - Xen-based security hypervisor
+# Xenith - QEMU/KVM-based hypervisor toolkit
 # Copyright (C) 2025 Xenith contributors
-
+#
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
-
+#
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-
+#
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
@@ -18,35 +18,33 @@ Vagrant.configure(2) do |config|
     config.vm.box = "debian/bookworm64"
     config.vm.define :xenith do |xenith|
         xenith.vm.hostname = "xenith"
-        xenith.vm.network :private_network, :ip => "192.168.126.10"
+        xenith.vm.network :private_network, :ip => "192.168.124.10"
     end
 
-    # Configure libvirt settings
     config.vm.provider :libvirt do |libvirt|
         libvirt.driver = "kvm"
-        libvirt.kvm_hidden = true
-        libvirt.nested = true
-        libvirt.machine_virtual_size = 100
+        libvirt.kvm_hidden = true   # hide KVM from the guest (stealth dev)
+        libvirt.nested = true       # enable nested KVM for running guest VMs
 
-        # Configure storage
-        libvirt.storage :file, :size => '30G' # vdb, dom0 storage
-        libvirt.storage :file, :size => '30G' # vdc, domU storage
+        # Storage: OS disk + data disk for VM images and snapshots
+        libvirt.machine_virtual_size = 60
+        libvirt.storage :file, :size => '60G' # vdb, VM images and snapshots
 
-        # Configure CPU and memory
+        # CPU and memory
         libvirt.cpus = 8
-        # check https://libvirt.org/formatdomain.html#cpu-model-and-topology
+        # see https://libvirt.org/formatdomain.html#cpu-model-and-topology
         libvirt.cpu_mode = 'host-model'
         libvirt.cpu_fallback = 'forbid'
         libvirt.memory = 8192
 
-        # Configure network
+        # Network
         libvirt.nic_model_type = "virtio"
         libvirt.management_network_name = 'xenith-network'
-        libvirt.management_network_address = '192.168.126.0/24'
+        libvirt.management_network_address = '192.168.124.0/24'
 
-        # Configure graphics
+        # Graphics (SPICE for better performance than VNC)
         libvirt.video_type = "qxl"
-        libvirt.graphics_type = "vnc"
+        libvirt.graphics_type = "spice"
 
         libvirt.memorybacking :access, :mode => "shared"
     end
@@ -54,27 +52,13 @@ Vagrant.configure(2) do |config|
     # Synced folders
     config.vm.synced_folder "./", "/vagrant", type: "virtiofs"
 
-    # Provisioning
+    # Provisioning — single pass, no reboot required
     ANSIBLE_COMPATIBILITY_MODE = "2.0"
     ANSIBLE_VERBOSITY = "" # can be up to "-vvv" for more verbosity
 
-    # Pre-reboot
-    # - Install Xen
-    # - Install common packages
     config.vm.provision "ansible" do |ansible|
         ansible.compatibility_mode = ANSIBLE_COMPATIBILITY_MODE
         ansible.verbose = ANSIBLE_VERBOSITY
-        ansible.playbook = "ansible/pre_reboot.yml"
-    end
-
-    config.vm.provision :reload
-
-    # Post-reboot
-    # - Install and configure SSH daemon
-    # - Disk partitioning
-    config.vm.provision "ansible" do |ansible|
-        ansible.compatibility_mode = ANSIBLE_COMPATIBILITY_MODE
-        ansible.verbose = ANSIBLE_VERBOSITY
-        ansible.playbook = "ansible/post_reboot.yml"
+        ansible.playbook = "ansible/provision.yml"
     end
 end
