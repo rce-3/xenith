@@ -1,6 +1,6 @@
 /*
 Xenith - Xen-based security hypervisor
-Copyright (C) 2025 Xenith contributors
+Copyright (C) 2025-2026 Xenith contributors
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
