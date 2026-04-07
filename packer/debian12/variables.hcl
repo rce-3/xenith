@@ -1,4 +1,4 @@
-# Xenith - Xen-based security hypervisor
+# Xenith - QEMU/KVM-based hypervisor toolkit
 # Copyright (C) 2025 Xenith contributors
 
 # This program is free software: you can redistribute it and/or modify

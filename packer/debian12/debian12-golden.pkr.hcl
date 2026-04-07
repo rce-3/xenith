@@ -1,4 +1,4 @@
-# Xenith - Xen-based security hypervisor
+# Xenith - QEMU/KVM-based hypervisor toolkit
 # Copyright (C) 2025 Xenith contributors
 
 # This program is free software: you can redistribute it and/or modify
@@ -88,7 +88,7 @@ source "qemu" "debian12-golden" {
   vm_name = "debian12-golden.qcow2"
 
   # Qemu options
-  accelerator = "kvm" # to be changed by "xen"
+  accelerator = "kvm"
   headless    = "true"
   memory      = var.builder_memory
   cores       = var.builder_cores
