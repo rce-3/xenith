@@ -81,7 +81,7 @@ pub fn technique_impl(args: TokenStream, input: TokenStream) -> TokenStream {
         _ => {
             return TokenStream::from(
                 Error::custom("Invalid OS, choose from 'linux', 'windows' or 'all'").write_errors(),
-            )
+            );
         }
     };
 
