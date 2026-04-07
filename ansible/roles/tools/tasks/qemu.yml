@@ -1,0 +1,51 @@
+---
+- name: Install QEMU/KVM and required tools
+  ansible.builtin.package:
+    name: "{{ item }}"
+  with_items:
+    - qemu-system-x86
+    - qemu-utils
+    - qemu-system-gui
+    - libvirt-daemon-system  # used by Vagrant, not by Xenith itself
+    - virt-manager
+    - cpu-checker            # kvm-ok command
+
+- name: Add vagrant user to kvm group
+  ansible.builtin.user:
+    name: vagrant
+    groups: kvm
+    append: true
+
+- name: Add vagrant user to libvirt group
+  ansible.builtin.user:
+    name: vagrant
+    groups: libvirt
+    append: true
+
+- name: Ensure KVM module is loaded
+  community.general.modprobe:
+    name: kvm_intel
+    state: present
+  failed_when: false  # kvm_amd on AMD hosts, ignore failure and let the next task handle it
+
+- name: Ensure KVM AMD module is loaded (AMD hosts)
+  community.general.modprobe:
+    name: kvm_amd
+    state: present
+  failed_when: false
+
+- name: Enable nested KVM (Intel)
+  ansible.builtin.copy:
+    dest: /etc/modprobe.d/kvm-nested.conf
+    content: |
+      options kvm_intel nested=1
+      options kvm_amd nested=1
+    mode: "0644"
+
+- name: Create /data directory for VM images
+  ansible.builtin.file:
+    path: /data
+    state: directory
+    mode: "0755"
+    owner: vagrant
+    group: vagrant

@@ -5,11 +5,11 @@
   with_items:
     - parted
 
-- name: Create a new primary partition with free space left
+- name: Create a new primary partition on data disk
   ansible.builtin.shell:
     cmd: |
       set -o pipefail
-      (echo n ; echo p; echo 2; echo ; echo ; echo w) | fdisk /dev/vdc
+      (echo n ; echo p; echo 2; echo ; echo ; echo w) | fdisk /dev/vdb
     executable: /bin/bash
   register: fdisk
   changed_when: false
@@ -22,7 +22,7 @@
   failed_when: partprobe.rc != 0
 
 - name: Create ext4 filesystem
-  ansible.builtin.command: mkfs.ext4 /dev/vdc2
+  ansible.builtin.command: mkfs.ext4 /dev/vdb2
   register: mkfs
   changed_when: false
   failed_when: mkfs.rc != 0
@@ -37,7 +37,7 @@
 
 - name: Mount the new partition on /data
   ansible.posix.mount:
-    src: /dev/vdc2
+    src: /dev/vdb2
     name: /data
     state: mounted
     fstype: ext4

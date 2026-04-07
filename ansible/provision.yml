@@ -1,9 +1,9 @@
 ---
-- name: Pre-reboot tasks
+- name: Provision Xenith development environment
   hosts: all
   become: true
   gather_facts: false
   roles:
     - common
-    - xen
     - kde
+    - tools

@@ -2,14 +2,10 @@
 tools:
   enable_sshd: true
   enable_partitioning: true
-  enable_libvirt: true
+  enable_qemu: true
   enable_rust: true
 
 shared_folder: "/vagrant"
-
-xen:
-  source: true # set to true to install Xen from source
-  source_path: "{{ shared_folder }}/xen"
 
 sshd:
   password:

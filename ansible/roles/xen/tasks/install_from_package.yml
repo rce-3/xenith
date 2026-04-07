@@ -1,6 +1,0 @@
----
-- name: Install Xen
-  ansible.builtin.package:
-    name: "{{ item }}"
-  with_items:
-    - xen-system-amd64

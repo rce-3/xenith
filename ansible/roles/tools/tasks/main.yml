@@ -7,9 +7,9 @@
   ansible.builtin.include_tasks: partition.yml
   when: tools.enable_partitioning
 
-- name: Install libvirt
-  ansible.builtin.include_tasks: libvirt.yml
-  when: tools.enable_libvirt
+- name: Install QEMU/KVM
+  ansible.builtin.include_tasks: qemu.yml
+  when: tools.enable_qemu
 
 - name: Install Rust
   ansible.builtin.include_tasks: rust.yml
