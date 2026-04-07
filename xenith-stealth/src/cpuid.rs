@@ -1,5 +1,3 @@
-use std::ffi::OsString;
-
 use crate::profile::HardwareProfile;
 
 /// Build QEMU `-cpu` arguments that mask hypervisor CPUID leaves.
@@ -7,8 +5,7 @@ use crate::profile::HardwareProfile;
 /// The resulting arg list hides the hypervisor bit, spoofs the CPU vendor
 /// string, and disables KVM paravirtual leaves so the guest sees bare metal.
 #[must_use]
-pub fn build_args(profile: &HardwareProfile) -> Vec<OsString> {
-    // Base CPU model that mirrors the profile vendor
+pub fn build_args(profile: &HardwareProfile) -> Vec<String> {
     let base_cpu = if profile.cpu_vendor == "AuthenticAMD" {
         "EPYC-v4"
     } else {
@@ -25,5 +22,5 @@ pub fn build_args(profile: &HardwareProfile) -> Vec<OsString> {
         vendor = profile.cpu_vendor,
     );
 
-    vec![OsString::from("-cpu"), OsString::from(cpu_arg)]
+    vec![String::from("-cpu"), cpu_arg]
 }
