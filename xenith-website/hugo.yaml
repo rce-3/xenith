@@ -26,7 +26,7 @@ menu:
       pageRef: /blog
       weight: 2
     - name: Contact ↗
-      url: "https://github.com/rce-3"
+      url: "https://github.com/theo-abel"
       weight: 3
     - name: Search
       weight: 4
@@ -34,12 +34,12 @@ menu:
         type: search
     - name: GitHub
       weight: 5
-      url: "https://github.com/rce-3/xenith"
+      url: "https://github.com/theo-abel/xenith"
       params:
         icon: github
     - name: Twitter
       weight: 6
-      url: "https://x.com/xenith_re"
+      url: "https://x.com/theoabel_"
       params:
         icon: x-twitter
 
@@ -61,7 +61,7 @@ params:
 
   editURL:
     enable: true
-    base: "https://github.com/rce-3/xenith/edit/main/docs"
+    base: "https://github.com/theo-abel/xenith/edit/main/docs"
 
   theme:
     default: system

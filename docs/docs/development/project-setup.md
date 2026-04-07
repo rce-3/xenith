@@ -15,15 +15,15 @@ Xenith is a complex project that requires some setup to get started. This guide 
 
 Ensure KVM is available on your host and that nested virtualization is enabled (required for running guest VMs inside the Vagrant development machine):
 
-{{< tabs items="Arch Linux,Ubuntu" >}}
+{{< tabs >}}
 
-    {{< tab >}}
+    {{< tab name="Arch Linux" >}}
 
     Refer to the [Arch Wiki](https://wiki.archlinux.org/title/KVM) for more information.
 
     {{< /tab >}}
 
-    {{< tab >}}
+    {{< tab name="Ubuntu" >}}
 
     Refer to the official Ubuntu blog post [KVM hypervisor: a beginners' guide](https://ubuntu.com/blog/kvm-hyphervisor).
 
@@ -36,9 +36,9 @@ Ensure KVM is available on your host and that nested virtualization is enabled (
 > [!Note]
 > QEMU is a generic and open source machine emulator and virtualizer. When paired with KVM, it achieves near-native performance by executing guest code directly on the host CPU. Xenith uses QEMU as its VM backend.
 
-{{< tabs items="Arch Linux,Ubuntu" >}}
+{{< tabs >}}
 
-    {{< tab >}}
+    {{< tab name="Arch Linux" >}}
 
     ```shell
     sudo pacman -S qemu-desktop
@@ -46,7 +46,7 @@ Ensure KVM is available on your host and that nested virtualization is enabled (
 
     {{< /tab >}}
 
-    {{< tab >}}
+    {{< tab name="Ubuntu" >}}
 
     ```shell
     sudo apt install qemu-system-x86 qemu-utils -y
@@ -61,9 +61,9 @@ Ensure KVM is available on your host and that nested virtualization is enabled (
 > [!Note]
 > libvirt is used by Vagrant to manage the development VM. It is not used by Xenith itself — Xenith manages guest VMs directly via QEMU.
 
-{{< tabs items="Arch Linux,Ubuntu" >}}
+{{< tabs >}}
 
-    {{< tab >}}
+    {{< tab name="Arch Linux" >}}
 
     ```shell
     sudo pacman -S libvirt
@@ -71,7 +71,7 @@ Ensure KVM is available on your host and that nested virtualization is enabled (
 
     {{< /tab >}}
 
-    {{< tab >}}
+    {{< tab name="Ubuntu" >}}
 
     ```shell
     sudo apt install libvirt-daemon-system -y
@@ -93,9 +93,9 @@ sudo systemctl enable --now libvirtd
 > [!Note]
 > Vagrant is used to provision a Debian 12 development VM with all required tools pre-installed (QEMU/KVM, Rust, KDE).
 
-{{< tabs items="Arch Linux,Ubuntu" >}}
+{{< tabs >}}
 
-    {{< tab >}}
+    {{< tab name="Arch Linux" >}}
 
     ```shell
     sudo pacman -S vagrant
@@ -103,7 +103,7 @@ sudo systemctl enable --now libvirtd
 
     {{< /tab >}}
 
-    {{< tab >}}
+    {{< tab name="Ubuntu" >}}
 
     ```shell
     # Import repository GPG keys
@@ -121,9 +121,9 @@ sudo systemctl enable --now libvirtd
 
 #### vagrant-libvirt plugin
 
-{{< tabs items="Arch Linux,Ubuntu" >}}
+{{< tabs >}}
 
-    {{< tab >}}
+    {{< tab name="Arch Linux" >}}
 
     As mentioned in the [Arch Wiki](https://wiki.archlinux.org/title/Vagrant#vagrant-libvirt), you may need to disable strict dependency enforcement first:
 
@@ -133,7 +133,7 @@ sudo systemctl enable --now libvirtd
 
     {{< /tab >}}
 
-    {{< tab >}}
+    {{< tab name="Ubuntu" >}}
 
     ```shell
     sudo apt install ebtables libguestfs-tools ruby-fog-libvirt -y
@@ -152,9 +152,9 @@ vagrant plugin install vagrant-libvirt
 > [!Note]
 > Ansible provisions the development VM automatically when you run `vagrant up`.
 
-{{< tabs items="Arch Linux,Ubuntu" >}}
+{{< tabs >}}
 
-    {{< tab >}}
+    {{< tab name="Arch Linux" >}}
 
     ```shell
     sudo pacman -S ansible python-passlib
@@ -162,7 +162,7 @@ vagrant plugin install vagrant-libvirt
 
     {{< /tab >}}
 
-    {{< tab >}}
+    {{< tab name="Ubuntu" >}}
 
     ```shell
     sudo apt-add-repository ppa:ansible/ansible
@@ -181,9 +181,9 @@ ansible-galaxy collection install ansible.posix community.general
 
 ### Rust
 
-{{< tabs items="Arch Linux,Ubuntu" >}}
+{{< tabs >}}
 
-    {{< tab >}}
+    {{< tab name="Arch Linux" >}}
 
     ```shell
     sudo pacman -S rustup
@@ -191,7 +191,7 @@ ansible-galaxy collection install ansible.posix community.general
 
     {{< /tab >}}
 
-    {{< tab >}}
+    {{< tab name="Ubuntu" >}}
 
     ```shell
     curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
@@ -201,15 +201,15 @@ ansible-galaxy collection install ansible.posix community.general
 
 {{< /tabs >}}
 
-{{< tabs items="Bash/Zsh,Fish" >}}
+{{< tabs >}}
 
-    {{< tab >}}
+    {{< tab name="Bash/Zsh" >}}
 
     Check this [stack overflow post](https://unix.stackexchange.com/a/26059) for more information.
 
     {{< /tab >}}
 
-    {{< tab >}}
+    {{< tab name="Fish" >}}
 
     ```shell
     fish_add_path $HOME/.cargo/bin
@@ -224,9 +224,9 @@ ansible-galaxy collection install ansible.posix community.general
 > [!Note]
 > Just is an optional command runner used to automate build, test, and lint tasks in the project.
 
-{{< tabs items="Arch Linux,Ubuntu" >}}
+{{< tabs >}}
 
-    {{< tab >}}
+    {{< tab name="Arch Linux" >}}
 
     ```shell
     sudo pacman -S just
@@ -234,7 +234,7 @@ ansible-galaxy collection install ansible.posix community.general
 
     {{< /tab >}}
 
-    {{< tab >}}
+    {{< tab name="Ubuntu" >}}
 
     ```shell
     sudo apt install just -y
