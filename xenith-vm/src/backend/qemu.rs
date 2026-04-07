@@ -1,5 +1,6 @@
 use std::ffi::OsString;
 use std::fs;
+use std::path::Path;
 use std::process::Stdio;
 use std::time::Duration;
 
@@ -8,7 +9,7 @@ use tracing::debug;
 
 use crate::config::VmConfig;
 use crate::display::DisplayMode;
-use crate::error::VmError;
+use crate::error::Error as VmError;
 
 use super::VmBackend;
 
@@ -17,6 +18,7 @@ type QmpService = qapi::futures::QapiService<
 >;
 
 /// QEMU backend: builds the QEMU command line and manages the process.
+#[derive(Debug, Clone, Copy, Default)]
 pub struct QemuBackend;
 
 impl QemuBackend {
@@ -29,7 +31,7 @@ impl QemuBackend {
         add_networks(&mut args, config);
         add_display(&mut args, config);
         add_qmp_daemon(&mut args, config);
-        args.extend(config.extra_args.iter().map(std::ffi::OsString::from));
+        args.extend(config.extra_args().iter().map(OsString::from));
         args
     }
 }
@@ -59,13 +61,7 @@ impl VmBackend for QemuBackend {
             )));
         }
 
-        let pid_path = config.runtime_dir().join("qemu.pid");
-        let pid_str = fs::read_to_string(&pid_path)
-            .map_err(|e| VmError::Backend(format!("could not read pidfile: {e}")))?;
-        pid_str
-            .trim()
-            .parse::<u32>()
-            .map_err(|e| VmError::Backend(format!("invalid PID in pidfile: {e}")))
+        read_pid_file(&config.runtime_dir().join("qemu.pid")).await
     }
 
     /// # Errors
@@ -83,15 +79,9 @@ impl VmBackend for QemuBackend {
     ///
     /// Returns [`VmError`] if the PID file cannot be read or the kill syscall fails.
     async fn kill(&self, config: &VmConfig) -> Result<(), VmError> {
-        let pid_path = config.runtime_dir().join("qemu.pid");
-        let pid_str = fs::read_to_string(&pid_path)
-            .map_err(|e| VmError::Backend(format!("could not read pidfile: {e}")))?;
-        let pid = pid_str
-            .trim()
-            .parse::<u32>()
-            .map_err(|e| VmError::Backend(format!("invalid PID in pidfile: {e}")))?;
+        let pid = read_pid_file(&config.runtime_dir().join("qemu.pid")).await?;
         // SAFETY: valid PID from our own pidfile; SIGKILL is well-defined.
-        libc_kill(pid, 9)
+        libc_kill(pid)
     }
 
     async fn pause(&self, config: &VmConfig) -> Result<(), VmError> {
@@ -152,7 +142,7 @@ impl VmBackend for QemuBackend {
     }
 }
 
-// ── QMP helpers ──────────────────────────────────────────────────────────────
+// QMP helpers
 
 /// Open a QMP connection and return the service handle.
 /// The background I/O task runs until the returned service is dropped.
@@ -173,7 +163,10 @@ async fn qmp_connect(config: &VmConfig) -> Result<QmpService, VmError> {
 async fn wait_job(qmp: &QmpService, job_id: &str) -> Result<(), VmError> {
     loop {
         tokio::time::sleep(Duration::from_millis(200)).await;
-        let jobs = qmp.execute(qapi::qmp::query_jobs {}).await.map_err(qmp_err)?;
+        let jobs = qmp
+            .execute(qapi::qmp::query_jobs {})
+            .await
+            .map_err(qmp_err)?;
         match jobs.iter().find(|j| j.id == job_id) {
             None => return Ok(()),
             Some(job) => advance_job(qmp, job_id, job).await?,
@@ -189,17 +182,21 @@ async fn advance_job(
     use qapi::qmp::JobStatus::{aborting, concluded, pending};
     match job.status {
         pending => {
-            qmp.execute(qapi::qmp::job_finalize { id: job_id.to_owned() })
-                .await
-                .map_err(qmp_err)?;
+            qmp.execute(qapi::qmp::job_finalize {
+                id: job_id.to_owned(),
+            })
+            .await
+            .map_err(qmp_err)?;
         }
         concluded => {
             if let Some(err) = &job.error {
                 return Err(VmError::Qmp(format!("snapshot job failed: {err}")));
             }
-            qmp.execute(qapi::qmp::job_dismiss { id: job_id.to_owned() })
-                .await
-                .map_err(qmp_err)?;
+            qmp.execute(qapi::qmp::job_dismiss {
+                id: job_id.to_owned(),
+            })
+            .await
+            .map_err(qmp_err)?;
         }
         aborting => return Err(VmError::Qmp(format!("job '{job_id}' aborted"))),
         _ => {}
@@ -211,14 +208,14 @@ fn qmp_err(e: impl std::fmt::Display) -> VmError {
     VmError::Qmp(e.to_string())
 }
 
-// ── QEMU arg builders ────────────────────────────────────────────────────────
+// QEMU arg builders
 
 fn add_machine_cpu_mem(args: &mut Vec<OsString>, config: &VmConfig) {
     args.extend(os_args(["-machine", "q35,accel=kvm"]));
-    args.extend(os_args(["-smp", &config.vcpus.to_string()]));
+    args.extend(os_args(["-smp", &config.vcpus().to_string()]));
     args.extend(os_args(["-m", &config.memory_mib().to_string()]));
 
-    if let Some(fw) = &config.firmware {
+    if let Some(fw) = config.firmware() {
         args.extend([
             OsString::from("-drive"),
             OsString::from(format!(
@@ -230,14 +227,14 @@ fn add_machine_cpu_mem(args: &mut Vec<OsString>, config: &VmConfig) {
 }
 
 fn add_disks(args: &mut Vec<OsString>, config: &VmConfig) {
-    for (i, disk) in config.disks.iter().enumerate() {
+    for (i, disk) in config.disks().iter().enumerate() {
         let drive_id = format!("drive{i}");
         args.extend([
             OsString::from("-drive"),
             OsString::from(format!(
                 "id={drive_id},file={},format={},if=none",
-                disk.path.display(),
-                disk.format,
+                disk.path().display(),
+                disk.format(),
             )),
         ]);
         args.extend([
@@ -248,23 +245,29 @@ fn add_disks(args: &mut Vec<OsString>, config: &VmConfig) {
 }
 
 fn add_networks(args: &mut Vec<OsString>, config: &VmConfig) {
-    for net in &config.networks {
+    for net in config.networks() {
         args.extend([
             OsString::from("-netdev"),
             OsString::from(format!(
                 "tap,id={},ifname={},script=no,downscript=no",
-                net.tap, net.tap
+                net.tap(),
+                net.tap()
             )),
         ]);
         args.extend([
             OsString::from("-device"),
-            OsString::from(format!("{},netdev={},mac={}", net.model, net.tap, net.mac)),
+            OsString::from(format!(
+                "{},netdev={},mac={}",
+                net.model(),
+                net.tap(),
+                net.mac()
+            )),
         ]);
     }
 }
 
 fn add_display(args: &mut Vec<OsString>, config: &VmConfig) {
-    match &config.display {
+    match config.display() {
         DisplayMode::Sdl => args.extend(os_args(["-display", "sdl"])),
         DisplayMode::Vnc(addr) => args.extend(os_args(["-display", &format!("vnc={addr}")])),
         DisplayMode::None => args.extend(os_args(["-display", "none", "-vga", "none"])),
@@ -290,23 +293,43 @@ fn os_args<const N: usize>(arr: [&str; N]) -> impl Iterator<Item = OsString> {
     arr.into_iter().map(OsString::from)
 }
 
-/// Thin wrapper around `kill(2)`.
+/// Read the QEMU pidfile, retrying up to 5 times with a 50 ms delay to allow
+/// the daemonised child process time to write the file after the parent exits.
 ///
-/// # Safety
+/// # Errors
 ///
-/// Caller must ensure `pid` is a valid process owned by the current user.
+/// Returns [`VmError`] if the file cannot be read or contains an invalid PID.
+async fn read_pid_file(path: &Path) -> Result<u32, VmError> {
+    let mut attempts = 0u8;
+    let pid_str = loop {
+        match fs::read_to_string(path) {
+            Ok(s) => break s,
+            Err(_) if attempts < 5 => {
+                attempts += 1;
+                tokio::time::sleep(Duration::from_millis(50)).await;
+            }
+            Err(e) => return Err(VmError::Backend(format!("could not read pidfile: {e}"))),
+        }
+    };
+    pid_str
+        .trim()
+        .parse::<u32>()
+        .map_err(|e| VmError::Backend(format!("invalid PID in pidfile: {e}")))
+}
+
+/// Thin wrapper around `kill(2)` that sends `SIGKILL`.
 ///
 /// # Errors
 ///
 /// Returns [`VmError`] if `kill(2)` returns a non-zero exit code.
-fn libc_kill(pid: u32, sig: i32) -> Result<(), VmError> {
+fn libc_kill(pid: u32) -> Result<(), VmError> {
     #[allow(clippy::cast_possible_wrap)]
-    let ret = unsafe { libc::kill(pid as libc::pid_t, sig) };
+    let ret = unsafe { libc::kill(pid as libc::pid_t, libc::SIGKILL) };
     if ret == 0 {
         Ok(())
     } else {
         Err(VmError::Backend(format!(
-            "kill({pid}, {sig}) failed: {}",
+            "kill({pid}, SIGKILL) failed: {}",
             std::io::Error::last_os_error()
         )))
     }

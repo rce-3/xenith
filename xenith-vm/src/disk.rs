@@ -1,9 +1,9 @@
 use std::path::{Path, PathBuf};
-use std::process::Command;
 
 use serde::{Deserialize, Serialize};
+use tokio::process::Command;
 
-use crate::error::VmError;
+use crate::error::Error as VmError;
 
 /// Image format understood by `qemu-img`.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
@@ -26,29 +26,52 @@ impl std::fmt::Display for DiskFormat {
 /// A disk image on the host that will be attached to a VM.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct DiskImage {
-    pub path: PathBuf,
-    pub format: DiskFormat,
+    path: PathBuf,
+    format: DiskFormat,
     /// Capacity in bytes.
-    pub size_bytes: u64,
+    size_bytes: u64,
 }
 
 impl DiskImage {
+    /// Path to the image file on the host.
+    #[must_use]
+    pub fn path(&self) -> &Path {
+        &self.path
+    }
+
+    /// Disk image format.
+    #[must_use]
+    pub fn format(&self) -> &DiskFormat {
+        &self.format
+    }
+
+    /// Capacity in bytes.
+    #[must_use]
+    pub fn size_bytes(&self) -> u64 {
+        self.size_bytes
+    }
+
+    /// Convert a GiB count to bytes.
+    #[must_use]
+    pub fn gib_to_bytes(gib: u64) -> u64 {
+        gib * 1024 * 1024 * 1024
+    }
+
     /// Create a new disk image via `qemu-img create`.
     ///
     /// # Errors
     ///
-    /// Returns [`VmError`] if `qemu-img` cannot be executed or exits non-zero.
-    pub fn create(path: &Path, format: DiskFormat, size_bytes: u64) -> Result<Self, VmError> {
+    /// Returns [`VmError`] if the path is not valid UTF-8, `qemu-img` cannot
+    /// be executed, or exits non-zero.
+    pub async fn create(path: &Path, format: DiskFormat, size_bytes: u64) -> Result<Self, VmError> {
+        let path_str = path
+            .to_str()
+            .ok_or_else(|| VmError::Disk("path is not valid UTF-8".into()))?;
         let size_arg = size_bytes.to_string();
         let status = Command::new("qemu-img")
-            .args([
-                "create",
-                "-f",
-                &format.to_string(),
-                path.to_str().unwrap_or_default(),
-                &size_arg,
-            ])
+            .args(["create", "-f", &format.to_string(), path_str, &size_arg])
             .status()
+            .await
             .map_err(|e| VmError::Disk(format!("qemu-img create failed: {e}")))?;
 
         if !status.success() {
@@ -69,12 +92,18 @@ impl DiskImage {
     ///
     /// # Errors
     ///
-    /// Returns [`VmError`] if `qemu-img` cannot be executed or exits non-zero.
-    pub fn resize(&self, new_size_bytes: u64) -> Result<(), VmError> {
+    /// Returns [`VmError`] if the path is not valid UTF-8, `qemu-img` cannot
+    /// be executed, or exits non-zero.
+    pub async fn resize(&self, new_size_bytes: u64) -> Result<(), VmError> {
+        let path_str = self
+            .path
+            .to_str()
+            .ok_or_else(|| VmError::Disk("path is not valid UTF-8".into()))?;
         let size_arg = new_size_bytes.to_string();
         let status = Command::new("qemu-img")
-            .args(["resize", self.path.to_str().unwrap_or_default(), &size_arg])
+            .args(["resize", path_str, &size_arg])
             .status()
+            .await
             .map_err(|e| VmError::Disk(format!("qemu-img resize failed: {e}")))?;
 
         if !status.success() {
@@ -95,10 +124,24 @@ impl DiskImage {
         std::fs::remove_file(&self.path)?;
         Ok(())
     }
+}
 
-    /// Convert GiB to bytes for use with `size_bytes`.
-    #[must_use]
-    pub fn size_gib(gib: u64) -> u64 {
-        gib * 1024 * 1024 * 1024
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn disk_format_display_qcow2() {
+        assert_eq!(DiskFormat::Qcow2.to_string(), "qcow2");
+    }
+
+    #[test]
+    fn disk_format_display_raw() {
+        assert_eq!(DiskFormat::Raw.to_string(), "raw");
+    }
+
+    #[test]
+    fn gib_to_bytes_converts_correctly() {
+        assert_eq!(DiskImage::gib_to_bytes(2), 2_147_483_648);
     }
 }

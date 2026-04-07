@@ -2,14 +2,23 @@ use tracing::{info, instrument};
 
 use crate::backend::VmBackend;
 use crate::config::VmConfig;
-use crate::error::VmError;
+use crate::error::Error as VmError;
 use crate::snapshot::Snapshot;
 
 /// A managed virtual machine instance.
 pub struct Vm<B: VmBackend> {
-    pub config: VmConfig,
+    config: VmConfig,
     backend: B,
     pid: Option<u32>,
+}
+
+impl<B: VmBackend + std::fmt::Debug> std::fmt::Debug for Vm<B> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Vm")
+            .field("config", &self.config)
+            .field("pid", &self.pid)
+            .finish_non_exhaustive()
+    }
 }
 
 impl<B: VmBackend> Vm<B> {
@@ -22,15 +31,23 @@ impl<B: VmBackend> Vm<B> {
         }
     }
 
+    /// The VM's configuration.
+    #[must_use]
+    pub fn config(&self) -> &VmConfig {
+        &self.config
+    }
+
     /// Start the VM.
     ///
     /// # Errors
     ///
     /// Returns [`VmError::AlreadyRunning`] if already running, or a backend error.
-    #[instrument(skip(self), fields(name = %self.config.name))]
+    #[instrument(skip(self), fields(name = %self.config.name()))]
     pub async fn start(&mut self) -> Result<(), VmError> {
         if self.pid.is_some() {
-            return Err(VmError::AlreadyRunning(self.config.name.clone()));
+            return Err(VmError::AlreadyRunning {
+                name: self.config.name().to_owned(),
+            });
         }
         let pid = self.backend.start(&self.config).await?;
         self.pid = Some(pid);
@@ -43,7 +60,7 @@ impl<B: VmBackend> Vm<B> {
     /// # Errors
     ///
     /// Returns [`VmError::NotRunning`] or a backend error.
-    #[instrument(skip(self), fields(name = %self.config.name))]
+    #[instrument(skip(self), fields(name = %self.config.name()))]
     pub async fn stop(&mut self) -> Result<(), VmError> {
         self.ensure_running()?;
         self.backend.stop(&self.config).await?;
@@ -57,7 +74,7 @@ impl<B: VmBackend> Vm<B> {
     /// # Errors
     ///
     /// Returns [`VmError::NotRunning`] or a backend error.
-    #[instrument(skip(self), fields(name = %self.config.name))]
+    #[instrument(skip(self), fields(name = %self.config.name()))]
     pub async fn kill(&mut self) -> Result<(), VmError> {
         self.ensure_running()?;
         self.backend.kill(&self.config).await?;
@@ -129,7 +146,9 @@ impl<B: VmBackend> Vm<B> {
 
     fn ensure_running(&self) -> Result<(), VmError> {
         if self.pid.is_none() {
-            return Err(VmError::NotRunning(self.config.name.clone()));
+            return Err(VmError::NotRunning {
+                name: self.config.name().to_owned(),
+            });
         }
         Ok(())
     }
