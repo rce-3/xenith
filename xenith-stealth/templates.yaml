@@ -43,11 +43,26 @@
 # platforms[].boards[].bios_version: DMI type 0 — board-specific, must be authentic
 
 ouis:
-  - vendor: Intel
-    oui: "00:1B:21"
-  - vendor: Realtek
+  # took from https://udger.com/resources/mac-address-vendor-detail?name=intel_corporation
+  - vendor: Intel Corporate
+    oui: "00:02:B3"
+  - vendor: Intel Corporate
+    oui: "00:03:47"
+  - vendor: Intel Corporate
+    oui: "00:04:23"  
+  - vendor: Intel Corporate
+    oui: "00:07:E9"
+  - vendor: Intel Corporate
+    oui: "00:0C:F1"
+  - vendor: Intel Corporate
+    oui: "00:0E:0C"
+  - vendor: Intel Corporate
+    oui: "00:0E:35"
+  - vendor: Intel Corporate
+    oui: "00:11:11"
+  - vendor: REALTEK SEMICONDUCTOR CORP.
     oui: "00:E0:4C"
-  - vendor: Realtek 2.5G
+  - vendor: Micro-Star INTL CO., LTD.
     oui: "D8:BB:C1"
 
 platforms:
