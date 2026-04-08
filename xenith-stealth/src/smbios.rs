@@ -1,5 +1,14 @@
 use crate::profile::HardwareProfile;
 
+/// Strip characters that QEMU's `-smbios` comma-delimited parser cannot handle.
+///
+/// QEMU splits `-smbios` values on commas with no escaping mechanism, so any
+/// comma inside a field value (e.g. `"Co., Ltd."`) is treated as a separator.
+/// Remove commas in-place; the resulting string remains human-readable.
+fn smbios_safe(s: &str) -> String {
+    s.replace(',', "")
+}
+
 /// Build QEMU `-smbios` arguments for BIOS, system, board, and chassis tables.
 ///
 /// Covers DMI types 0 (BIOS), 1 (System), 2 (Base Board), 3 (Chassis).
@@ -10,23 +19,23 @@ pub fn build_args(profile: &HardwareProfile) -> Vec<String> {
         String::from("-smbios"),
         format!(
             "type=0,vendor={},version={}",
-            profile.bios_vendor(),
-            profile.bios_version()
+            smbios_safe(profile.bios_vendor()),
+            smbios_safe(profile.bios_version()),
         ),
         // Type 1: System information
         String::from("-smbios"),
         format!(
             "type=1,manufacturer={},product={},serial={}",
-            profile.system_manufacturer(),
-            profile.system_product(),
+            smbios_safe(profile.system_manufacturer()),
+            smbios_safe(profile.system_product()),
             profile.system_serial(),
         ),
         // Type 2: Base board
         String::from("-smbios"),
         format!(
             "type=2,manufacturer={},product={},serial={}",
-            profile.board_manufacturer(),
-            profile.board_product(),
+            smbios_safe(profile.board_manufacturer()),
+            smbios_safe(profile.board_product()),
             profile.board_serial(),
         ),
         // Type 3: Chassis (generic, no identifying strings)
@@ -37,7 +46,7 @@ pub fn build_args(profile: &HardwareProfile) -> Vec<String> {
 
 #[cfg(test)]
 mod tests {
-    use super::build_args;
+    use super::{build_args, smbios_safe};
     use crate::profile::HardwareProfile;
 
     fn profile() -> HardwareProfile {
@@ -60,25 +69,25 @@ mod tests {
     #[test]
     fn type0_arg_contains_bios_vendor() {
         let p = profile();
-        assert!(build_args(&p)[1].contains(&format!("vendor={}", p.bios_vendor())));
+        assert!(build_args(&p)[1].contains(&format!("vendor={}", smbios_safe(p.bios_vendor()))));
     }
 
     #[test]
     fn type0_arg_contains_bios_version() {
         let p = profile();
-        assert!(build_args(&p)[1].contains(&format!("version={}", p.bios_version())));
+        assert!(build_args(&p)[1].contains(&format!("version={}", smbios_safe(p.bios_version()))));
     }
 
     #[test]
     fn type1_arg_contains_system_manufacturer() {
         let p = profile();
-        assert!(build_args(&p)[3].contains(p.system_manufacturer()));
+        assert!(build_args(&p)[3].contains(&smbios_safe(p.system_manufacturer())));
     }
 
     #[test]
     fn type1_arg_contains_system_product() {
         let p = profile();
-        assert!(build_args(&p)[3].contains(p.system_product()));
+        assert!(build_args(&p)[3].contains(&smbios_safe(p.system_product())));
     }
 
     #[test]
@@ -90,13 +99,13 @@ mod tests {
     #[test]
     fn type2_arg_contains_board_manufacturer() {
         let p = profile();
-        assert!(build_args(&p)[5].contains(p.board_manufacturer()));
+        assert!(build_args(&p)[5].contains(&smbios_safe(p.board_manufacturer())));
     }
 
     #[test]
     fn type2_arg_contains_board_product() {
         let p = profile();
-        assert!(build_args(&p)[5].contains(p.board_product()));
+        assert!(build_args(&p)[5].contains(&smbios_safe(p.board_product())));
     }
 
     #[test]

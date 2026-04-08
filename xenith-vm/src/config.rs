@@ -190,6 +190,23 @@ impl VmConfig {
         self
     }
 
+    /// Set the firmware image for UEFI boot (e.g. OVMF).
+    ///
+    /// Pass the path to the OVMF code blob (`OVMF_CODE.fd`). When set, the
+    /// backend adds it as a read-only pflash drive before the other disks.
+    #[must_use]
+    pub fn with_firmware(mut self, path: PathBuf) -> Self {
+        self.firmware = Some(path);
+        self
+    }
+
+    /// Set the display output mode.
+    #[must_use]
+    pub fn with_display(mut self, display: DisplayMode) -> Self {
+        self.display = display;
+        self
+    }
+
     /// Extend the extra QEMU args (e.g. from `xenith-stealth`).
     #[must_use]
     pub fn with_extra_args(mut self, args: impl IntoIterator<Item = String>) -> Self {

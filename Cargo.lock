@@ -1397,6 +1397,7 @@ dependencies = [
  "toml",
  "tracing",
  "uuid",
+ "xenith-stealth",
 ]
 
 [[package]]

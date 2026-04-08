@@ -66,9 +66,10 @@ mod tests {
     }
 
     #[test]
-    fn build_contains_no_kvmclock() {
+    fn build_cpu_arg_disables_kvmclock() {
         let args = StealthConfig::generate().build();
-        assert!(args.iter().any(|a| a == "-no-kvmclock"));
+        // kvmclock is disabled via a CPU feature flag, not a top-level QEMU option
+        assert!(args.iter().any(|a| a.contains("-kvmclock")));
     }
 
     #[test]
@@ -95,19 +96,15 @@ mod tests {
     }
 
     #[test]
-    fn smbios_args_precede_no_kvmclock() {
+    fn cpu_arg_precedes_smbios_args() {
+        // The only ordering guarantee now is -cpu before -smbios; timing is
+        // folded into -cpu flags so there is no separate ordering to assert.
         let args = StealthConfig::generate().build();
+        let cpu_pos = args.iter().position(|a| a == "-cpu").expect("-cpu present");
         let smbios_pos = args
             .iter()
             .position(|a| a == "-smbios")
             .expect("-smbios present");
-        let clock_pos = args
-            .iter()
-            .position(|a| a == "-no-kvmclock")
-            .expect("-no-kvmclock present");
-        assert!(
-            smbios_pos < clock_pos,
-            "-smbios must come before -no-kvmclock"
-        );
+        assert!(cpu_pos < smbios_pos);
     }
 }

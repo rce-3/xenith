@@ -26,3 +26,6 @@ libc      = "0.2"
 qapi      = { version = "0.15", features = ["qmp", "async-tokio-all"] }
 toml      = "0.8"
 mac-addr  = { workspace = true }
+
+[dev-dependencies]
+xenith-stealth = { path = "../xenith-stealth" }

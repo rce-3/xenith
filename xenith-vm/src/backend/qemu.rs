@@ -46,18 +46,19 @@ impl VmBackend for QemuBackend {
         let args = Self::build_args(config);
         debug!(?args, "starting QEMU");
 
-        let status = Command::new("qemu-system-x86_64")
+        let output = Command::new("qemu-system-x86_64")
             .args(&args)
             .stdin(Stdio::null())
             .stdout(Stdio::null())
-            .stderr(Stdio::null())
-            .status()
+            .stderr(Stdio::piped())
+            .output()
             .await?;
 
-        if !status.success() {
+        if !output.status.success() {
+            let stderr = String::from_utf8_lossy(&output.stderr);
             return Err(VmError::Backend(format!(
-                "qemu-system-x86_64 exited with {}",
-                status.code().unwrap_or(-1)
+                "qemu-system-x86_64 exited with {}: {stderr}",
+                output.status.code().unwrap_or(-1)
             )));
         }
 

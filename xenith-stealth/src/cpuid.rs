@@ -15,10 +15,11 @@ pub fn build_args(profile: &HardwareProfile) -> Vec<String> {
     // Feature flags:
     //   -hypervisor      hide the hypervisor present bit (CPUID.1:ECX[31])
     //   +invtsc          expose invariant TSC (expected by anti-VM checks)
-    //   kvm=off          disable KVM paravirtualisation leaves
+    //   kvm=off          disable KVM paravirtualisation CPUID leaves
+    //   -kvmclock        disable the KVM paravirtual clock device
     //   vendor=<str>     spoof the vendor string (GenuineIntel / AuthenticAMD)
     let cpu_arg = format!(
-        "{base_cpu},-hypervisor,+invtsc,kvm=off,vendor={vendor}",
+        "{base_cpu},-hypervisor,+invtsc,kvm=off,-kvmclock,vendor={vendor}",
         vendor = profile.cpu_vendor(),
     );
 

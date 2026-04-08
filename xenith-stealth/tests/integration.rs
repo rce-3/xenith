@@ -2,9 +2,11 @@ use xenith_stealth::{HardwareProfile, StealthConfig};
 
 #[test]
 fn stealth_config_build_arg_count_is_stable() {
-    // At minimum: 2 cpu args + 8 smbios args + 0 acpi + 1 timing + 4 devices = 15.
+    // At minimum: 2 cpu args + 8 smbios args + 0 acpi + 0 timing + 4 devices = 14.
+    // kvmclock is now a CPU feature flag (-kvmclock inside the -cpu arg), not a
+    // separate top-level option.
     let cfg = StealthConfig::generate();
-    assert!(cfg.build().len() >= 15, "expected at least 15 args");
+    assert!(cfg.build().len() >= 14, "expected at least 14 args");
 }
 
 #[test]
@@ -71,9 +73,19 @@ fn hardware_profile_mac_is_unicast_globally_administered() {
 }
 
 #[test]
-fn stealth_config_no_kvmclock_present() {
+fn stealth_config_kvmclock_disabled_via_cpu_flag() {
+    // -no-kvmclock is not a valid QEMU option; kvmclock is disabled by passing
+    // -kvmclock as a CPU feature flag inside the -cpu argument.
     let args = StealthConfig::generate().build();
-    assert!(args.iter().any(|a| a == "-no-kvmclock"));
+    let cpu_arg = args
+        .windows(2)
+        .find(|w| w[0] == "-cpu")
+        .map(|w| &w[1])
+        .expect("-cpu arg present");
+    assert!(
+        cpu_arg.contains("-kvmclock"),
+        "kvmclock must be disabled via CPU feature flag, got: {cpu_arg}"
+    );
 }
 
 #[test]
@@ -85,12 +97,10 @@ fn stealth_config_arg_ordering() {
 
     let cpu_pos = find("-cpu");
     let smbios_pos = find("-smbios");
-    let clock_pos = find("-no-kvmclock");
     let device_pos = find("-device");
 
     assert!(cpu_pos < smbios_pos, "-cpu must precede -smbios");
-    assert!(smbios_pos < clock_pos, "-smbios must precede -no-kvmclock");
-    assert!(clock_pos < device_pos, "-no-kvmclock must precede -device");
+    assert!(smbios_pos < device_pos, "-smbios must precede -device");
 }
 
 #[test]
