@@ -37,8 +37,8 @@ pub fn build_args(profile: &HardwareProfile) -> Vec<String> {
 
 #[cfg(test)]
 mod tests {
-    use crate::profile::HardwareProfile;
     use super::build_args;
+    use crate::profile::HardwareProfile;
 
     fn profile() -> HardwareProfile {
         HardwareProfile::generate()

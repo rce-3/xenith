@@ -35,19 +35,25 @@ mod tests {
 
     #[test]
     fn not_running_message_includes_name() {
-        let e = Error::NotRunning { name: "my-vm".to_owned() };
+        let e = Error::NotRunning {
+            name: "my-vm".to_owned(),
+        };
         assert_eq!(e.to_string(), "VM 'my-vm' is not running");
     }
 
     #[test]
     fn already_running_message_includes_name() {
-        let e = Error::AlreadyRunning { name: "test-vm".to_owned() };
+        let e = Error::AlreadyRunning {
+            name: "test-vm".to_owned(),
+        };
         assert_eq!(e.to_string(), "VM 'test-vm' is already running");
     }
 
     #[test]
     fn not_found_message_includes_name() {
-        let e = Error::NotFound { name: "missing".to_owned() };
+        let e = Error::NotFound {
+            name: "missing".to_owned(),
+        };
         assert_eq!(e.to_string(), "VM 'missing' not found");
     }
 

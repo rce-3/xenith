@@ -87,15 +87,27 @@ mod tests {
     fn cpu_args_precede_smbios_args() {
         let args = StealthConfig::generate().build();
         let cpu_pos = args.iter().position(|a| a == "-cpu").expect("-cpu present");
-        let smbios_pos = args.iter().position(|a| a == "-smbios").expect("-smbios present");
+        let smbios_pos = args
+            .iter()
+            .position(|a| a == "-smbios")
+            .expect("-smbios present");
         assert!(cpu_pos < smbios_pos, "-cpu must come before -smbios");
     }
 
     #[test]
     fn smbios_args_precede_no_kvmclock() {
         let args = StealthConfig::generate().build();
-        let smbios_pos = args.iter().position(|a| a == "-smbios").expect("-smbios present");
-        let clock_pos = args.iter().position(|a| a == "-no-kvmclock").expect("-no-kvmclock present");
-        assert!(smbios_pos < clock_pos, "-smbios must come before -no-kvmclock");
+        let smbios_pos = args
+            .iter()
+            .position(|a| a == "-smbios")
+            .expect("-smbios present");
+        let clock_pos = args
+            .iter()
+            .position(|a| a == "-no-kvmclock")
+            .expect("-no-kvmclock present");
+        assert!(
+            smbios_pos < clock_pos,
+            "-smbios must come before -no-kvmclock"
+        );
     }
 }

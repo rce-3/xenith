@@ -48,7 +48,11 @@ fn vm_config_networks_survive_toml_round_trip() {
 
 #[test]
 fn vm_config_extra_args_survive_toml_round_trip() {
-    let args = vec!["-no-kvmclock".to_owned(), "-cpu".to_owned(), "host".to_owned()];
+    let args = vec![
+        "-no-kvmclock".to_owned(),
+        "-cpu".to_owned(),
+        "host".to_owned(),
+    ];
     let cfg = make_config("extra-rt").with_extra_args(args.clone());
     let s = toml::to_string_pretty(&cfg).expect("serialize");
     let loaded: VmConfig = toml::from_str(&s).expect("deserialize");

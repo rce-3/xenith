@@ -293,13 +293,55 @@ fn os_args<const N: usize>(arr: [&str; N]) -> impl Iterator<Item = OsString> {
     arr.into_iter().map(OsString::from)
 }
 
+/// Read the QEMU pidfile, retrying up to 5 times with a 50 ms delay to allow
+/// the daemonised child process time to write the file after the parent exits.
+///
+/// # Errors
+///
+/// Returns [`VmError`] if the file cannot be read or contains an invalid PID.
+async fn read_pid_file(path: &Path) -> Result<u32, VmError> {
+    let mut attempts = 0u8;
+    let pid_str = loop {
+        match fs::read_to_string(path) {
+            Ok(s) => break s,
+            Err(_) if attempts < 5 => {
+                attempts += 1;
+                tokio::time::sleep(Duration::from_millis(50)).await;
+            }
+            Err(e) => return Err(VmError::Backend(format!("could not read pidfile: {e}"))),
+        }
+    };
+    pid_str
+        .trim()
+        .parse::<u32>()
+        .map_err(|e| VmError::Backend(format!("invalid PID in pidfile: {e}")))
+}
+
+/// Thin wrapper around `kill(2)` that sends `SIGKILL`.
+///
+/// # Errors
+///
+/// Returns [`VmError`] if `kill(2)` returns a non-zero exit code.
+fn libc_kill(pid: u32) -> Result<(), VmError> {
+    #[allow(clippy::cast_possible_wrap)]
+    let ret = unsafe { libc::kill(pid as libc::pid_t, libc::SIGKILL) };
+    if ret == 0 {
+        Ok(())
+    } else {
+        Err(VmError::Backend(format!(
+            "kill({pid}, SIGKILL) failed: {}",
+            std::io::Error::last_os_error()
+        )))
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use mac_addr::MacAddr;
 
+    use super::QemuBackend;
     use crate::config::{NetworkInterface, VmConfig};
     use crate::disk::DiskImage;
-    use super::QemuBackend;
 
     fn base_config() -> VmConfig {
         VmConfig::new("argtest", 4, VmConfig::gib_to_bytes(8))
@@ -313,22 +355,18 @@ mod tests {
     }
 
     fn flag_value(args: &[String], flag: &str) -> Option<String> {
-        args.windows(2)
-            .find(|w| w[0] == flag)
-            .map(|w| w[1].clone())
+        args.windows(2).find(|w| w[0] == flag).map(|w| w[1].clone())
     }
 
     #[test]
     fn machine_is_q35_kvm() {
-        let v = flag_value(&args_str(&base_config()), "-machine")
-            .expect("-machine flag present");
+        let v = flag_value(&args_str(&base_config()), "-machine").expect("-machine flag present");
         assert_eq!(v, "q35,accel=kvm");
     }
 
     #[test]
     fn smp_matches_vcpus() {
-        let v = flag_value(&args_str(&base_config()), "-smp")
-            .expect("-smp flag present");
+        let v = flag_value(&args_str(&base_config()), "-smp").expect("-smp flag present");
         assert_eq!(v, "4");
     }
 
@@ -342,7 +380,10 @@ mod tests {
     #[test]
     fn display_none_adds_display_none_and_vga_none() {
         let args = args_str(&base_config());
-        assert!(args.windows(2).any(|w| w[0] == "-display" && w[1] == "none"));
+        assert!(
+            args.windows(2)
+                .any(|w| w[0] == "-display" && w[1] == "none")
+        );
         assert!(args.windows(2).any(|w| w[0] == "-vga" && w[1] == "none"));
     }
 
@@ -417,8 +458,7 @@ mod tests {
 
     #[test]
     fn extra_args_are_appended_last() {
-        let cfg = base_config()
-            .with_extra_args(["--sentinel".to_owned()]);
+        let cfg = base_config().with_extra_args(["--sentinel".to_owned()]);
         let args = args_str(&cfg);
         assert_eq!(args.last().expect("non-empty"), "--sentinel");
     }
@@ -451,7 +491,8 @@ mod tests {
     #[test]
     fn disk_args_include_drive_id() {
         // DiskImage has no public constructor — build via serde.
-        let disk_toml = "path = \"/tmp/disk.qcow2\"\nformat = \"qcow2\"\nsize_bytes = 10737418240\n";
+        let disk_toml =
+            "path = \"/tmp/disk.qcow2\"\nformat = \"qcow2\"\nsize_bytes = 10737418240\n";
         let disk: DiskImage = toml::from_str(disk_toml).expect("parse disk");
         let cfg = base_config().with_disk(disk);
         let args = args_str(&cfg);
@@ -477,47 +518,5 @@ mod tests {
     fn no_disks_no_drive_args() {
         let args = args_str(&base_config());
         assert!(!args.iter().any(|a| a.contains("drive0")));
-    }
-}
-
-/// Read the QEMU pidfile, retrying up to 5 times with a 50 ms delay to allow
-/// the daemonised child process time to write the file after the parent exits.
-///
-/// # Errors
-///
-/// Returns [`VmError`] if the file cannot be read or contains an invalid PID.
-async fn read_pid_file(path: &Path) -> Result<u32, VmError> {
-    let mut attempts = 0u8;
-    let pid_str = loop {
-        match fs::read_to_string(path) {
-            Ok(s) => break s,
-            Err(_) if attempts < 5 => {
-                attempts += 1;
-                tokio::time::sleep(Duration::from_millis(50)).await;
-            }
-            Err(e) => return Err(VmError::Backend(format!("could not read pidfile: {e}"))),
-        }
-    };
-    pid_str
-        .trim()
-        .parse::<u32>()
-        .map_err(|e| VmError::Backend(format!("invalid PID in pidfile: {e}")))
-}
-
-/// Thin wrapper around `kill(2)` that sends `SIGKILL`.
-///
-/// # Errors
-///
-/// Returns [`VmError`] if `kill(2)` returns a non-zero exit code.
-fn libc_kill(pid: u32) -> Result<(), VmError> {
-    #[allow(clippy::cast_possible_wrap)]
-    let ret = unsafe { libc::kill(pid as libc::pid_t, libc::SIGKILL) };
-    if ret == 0 {
-        Ok(())
-    } else {
-        Err(VmError::Backend(format!(
-            "kill({pid}, SIGKILL) failed: {}",
-            std::io::Error::last_os_error()
-        )))
     }
 }

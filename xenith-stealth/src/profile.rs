@@ -261,7 +261,8 @@ mod tests {
         let s = p.system_serial();
         assert_eq!(s.len(), 10, "system serial must be 10 chars");
         assert!(
-            s.chars().all(|c| c.is_ascii_alphanumeric() && !c.is_ascii_lowercase()),
+            s.chars()
+                .all(|c| c.is_ascii_alphanumeric() && !c.is_ascii_lowercase()),
             "serial must be uppercase alphanumeric: {s}",
         );
     }
@@ -272,7 +273,8 @@ mod tests {
         let s = p.board_serial();
         assert_eq!(s.len(), 8, "board serial must be 8 chars");
         assert!(
-            s.chars().all(|c| c.is_ascii_alphanumeric() && !c.is_ascii_lowercase()),
+            s.chars()
+                .all(|c| c.is_ascii_alphanumeric() && !c.is_ascii_lowercase()),
             "serial must be uppercase alphanumeric: {s}",
         );
     }

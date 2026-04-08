@@ -156,27 +156,46 @@ impl<B: VmBackend> Vm<B> {
 
 #[cfg(test)]
 mod tests {
+    use super::Vm;
     use crate::backend::VmBackend;
     use crate::config::VmConfig;
     use crate::error::Error as VmError;
-    use super::Vm;
 
     #[derive(Debug, Clone, Default)]
     struct MockBackend;
 
     impl VmBackend for MockBackend {
-        async fn start(&self, _: &VmConfig) -> Result<u32, VmError> { Ok(42) }
-        async fn stop(&self, _: &VmConfig) -> Result<(), VmError> { Ok(()) }
-        async fn kill(&self, _: &VmConfig) -> Result<(), VmError> { Ok(()) }
-        async fn pause(&self, _: &VmConfig) -> Result<(), VmError> { Ok(()) }
-        async fn resume(&self, _: &VmConfig) -> Result<(), VmError> { Ok(()) }
-        async fn save_snapshot(&self, _: &VmConfig, _: &str) -> Result<(), VmError> { Ok(()) }
-        async fn restore_snapshot(&self, _: &VmConfig, _: &str) -> Result<(), VmError> { Ok(()) }
-        async fn delete_snapshot(&self, _: &VmConfig, _: &str) -> Result<(), VmError> { Ok(()) }
+        async fn start(&self, _: &VmConfig) -> Result<u32, VmError> {
+            Ok(42)
+        }
+        async fn stop(&self, _: &VmConfig) -> Result<(), VmError> {
+            Ok(())
+        }
+        async fn kill(&self, _: &VmConfig) -> Result<(), VmError> {
+            Ok(())
+        }
+        async fn pause(&self, _: &VmConfig) -> Result<(), VmError> {
+            Ok(())
+        }
+        async fn resume(&self, _: &VmConfig) -> Result<(), VmError> {
+            Ok(())
+        }
+        async fn save_snapshot(&self, _: &VmConfig, _: &str) -> Result<(), VmError> {
+            Ok(())
+        }
+        async fn restore_snapshot(&self, _: &VmConfig, _: &str) -> Result<(), VmError> {
+            Ok(())
+        }
+        async fn delete_snapshot(&self, _: &VmConfig, _: &str) -> Result<(), VmError> {
+            Ok(())
+        }
     }
 
     fn make_vm() -> Vm<MockBackend> {
-        Vm::new(VmConfig::new("test-vm", 2, 2 * 1024 * 1024 * 1024), MockBackend)
+        Vm::new(
+            VmConfig::new("test-vm", 2, 2 * 1024 * 1024 * 1024),
+            MockBackend,
+        )
     }
 
     #[test]
@@ -264,13 +283,19 @@ mod tests {
 
     #[tokio::test]
     async fn restore_snapshot_not_running_returns_error() {
-        let err = make_vm().restore_snapshot("v1").await.expect_err("must fail");
+        let err = make_vm()
+            .restore_snapshot("v1")
+            .await
+            .expect_err("must fail");
         assert!(matches!(err, VmError::NotRunning { .. }));
     }
 
     #[tokio::test]
     async fn delete_snapshot_not_running_returns_error() {
-        let err = make_vm().delete_snapshot("v1").await.expect_err("must fail");
+        let err = make_vm()
+            .delete_snapshot("v1")
+            .await
+            .expect_err("must fail");
         assert!(matches!(err, VmError::NotRunning { .. }));
     }
 

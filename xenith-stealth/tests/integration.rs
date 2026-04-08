@@ -64,7 +64,10 @@ fn hardware_profile_mac_is_unicast_globally_administered() {
     let p = HardwareProfile::generate();
     let mac = p.mac_address();
     assert!(mac.is_unicast(), "spoofed MAC must be unicast");
-    assert!(mac.is_universal(), "spoofed MAC must use a globally-administered OUI");
+    assert!(
+        mac.is_universal(),
+        "spoofed MAC must use a globally-administered OUI"
+    );
 }
 
 #[test]
@@ -77,11 +80,8 @@ fn stealth_config_no_kvmclock_present() {
 fn stealth_config_arg_ordering() {
     let args = StealthConfig::generate().build();
 
-    let find = |needle: &str| -> usize {
-        args.iter()
-            .position(|a| a == needle)
-            .unwrap_or(usize::MAX)
-    };
+    let find =
+        |needle: &str| -> usize { args.iter().position(|a| a == needle).unwrap_or(usize::MAX) };
 
     let cpu_pos = find("-cpu");
     let smbios_pos = find("-smbios");
@@ -100,7 +100,8 @@ fn hardware_profile_serials_differ() {
     let b = HardwareProfile::generate();
     // Very unlikely to collide given a 36^10 space; if it does the RNG is broken.
     assert_ne!(
-        a.system_serial(), b.system_serial(),
+        a.system_serial(),
+        b.system_serial(),
         "two consecutive profiles share the same system serial — RNG may be seeded identically"
     );
 }
