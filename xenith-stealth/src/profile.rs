@@ -230,4 +230,87 @@ mod tests {
         assert!(!p.cpu_vendor().is_empty());
         assert!(!p.mac_address().to_string().starts_with("52:54"));
     }
+
+    #[test]
+    fn cpu_vendor_is_intel_or_amd() {
+        let p = HardwareProfile::generate();
+        assert!(
+            p.cpu_vendor() == "GenuineIntel" || p.cpu_vendor() == "AuthenticAMD",
+            "unexpected vendor: {}",
+            p.cpu_vendor()
+        );
+    }
+
+    #[test]
+    fn all_string_fields_are_nonempty() {
+        let p = HardwareProfile::generate();
+        assert!(!p.cpu_model().is_empty());
+        assert!(!p.bios_vendor().is_empty());
+        assert!(!p.bios_version().is_empty());
+        assert!(!p.system_manufacturer().is_empty());
+        assert!(!p.system_product().is_empty());
+        assert!(!p.system_serial().is_empty());
+        assert!(!p.board_manufacturer().is_empty());
+        assert!(!p.board_product().is_empty());
+        assert!(!p.board_serial().is_empty());
+    }
+
+    #[test]
+    fn system_serial_is_ten_uppercase_alphanumeric_chars() {
+        let p = HardwareProfile::generate();
+        let s = p.system_serial();
+        assert_eq!(s.len(), 10, "system serial must be 10 chars");
+        assert!(
+            s.chars().all(|c| c.is_ascii_alphanumeric() && !c.is_ascii_lowercase()),
+            "serial must be uppercase alphanumeric: {s}",
+        );
+    }
+
+    #[test]
+    fn board_serial_is_eight_uppercase_alphanumeric_chars() {
+        let p = HardwareProfile::generate();
+        let s = p.board_serial();
+        assert_eq!(s.len(), 8, "board serial must be 8 chars");
+        assert!(
+            s.chars().all(|c| c.is_ascii_alphanumeric() && !c.is_ascii_lowercase()),
+            "serial must be uppercase alphanumeric: {s}",
+        );
+    }
+
+    #[test]
+    fn mac_uses_known_oui_prefix() {
+        let known: Vec<[u8; 3]> = ouis().iter().map(|o| o.bytes()).collect();
+        let p = HardwareProfile::generate();
+        let oui = p.mac_address().oui();
+        assert!(
+            known.contains(&oui),
+            "MAC {} has unrecognised OUI {:02X?}",
+            p.mac_address(),
+            oui,
+        );
+    }
+
+    #[test]
+    fn random_serial_length_matches_requested() {
+        let mut rng = rand::rng();
+        assert_eq!(random_serial(&mut rng, 5).len(), 5);
+        assert_eq!(random_serial(&mut rng, 12).len(), 12);
+    }
+
+    #[test]
+    fn generate_produces_varied_results() {
+        let models: std::collections::HashSet<String> = (0..20)
+            .map(|_| HardwareProfile::generate().cpu_model().to_owned())
+            .collect();
+        assert!(models.len() > 1, "all profiles had the same CPU model");
+    }
+
+    #[test]
+    fn profile_is_clone_and_equal_debug() {
+        let p = HardwareProfile::generate();
+        let cloned = p.clone();
+        assert_eq!(p.cpu_vendor(), cloned.cpu_vendor());
+        assert_eq!(p.system_serial(), cloned.system_serial());
+        assert_eq!(p.mac_address(), cloned.mac_address());
+    }
 }

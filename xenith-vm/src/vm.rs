@@ -153,3 +153,141 @@ impl<B: VmBackend> Vm<B> {
         Ok(())
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::backend::VmBackend;
+    use crate::config::VmConfig;
+    use crate::error::Error as VmError;
+    use super::Vm;
+
+    #[derive(Debug, Clone, Default)]
+    struct MockBackend;
+
+    impl VmBackend for MockBackend {
+        async fn start(&self, _: &VmConfig) -> Result<u32, VmError> { Ok(42) }
+        async fn stop(&self, _: &VmConfig) -> Result<(), VmError> { Ok(()) }
+        async fn kill(&self, _: &VmConfig) -> Result<(), VmError> { Ok(()) }
+        async fn pause(&self, _: &VmConfig) -> Result<(), VmError> { Ok(()) }
+        async fn resume(&self, _: &VmConfig) -> Result<(), VmError> { Ok(()) }
+        async fn save_snapshot(&self, _: &VmConfig, _: &str) -> Result<(), VmError> { Ok(()) }
+        async fn restore_snapshot(&self, _: &VmConfig, _: &str) -> Result<(), VmError> { Ok(()) }
+        async fn delete_snapshot(&self, _: &VmConfig, _: &str) -> Result<(), VmError> { Ok(()) }
+    }
+
+    fn make_vm() -> Vm<MockBackend> {
+        Vm::new(VmConfig::new("test-vm", 2, 2 * 1024 * 1024 * 1024), MockBackend)
+    }
+
+    #[test]
+    fn initial_state_not_running() {
+        assert!(!make_vm().is_running());
+    }
+
+    #[test]
+    fn initial_pid_is_none() {
+        assert!(make_vm().pid().is_none());
+    }
+
+    #[test]
+    fn config_accessor_returns_correct_name() {
+        assert_eq!(make_vm().config().name(), "test-vm");
+    }
+
+    #[tokio::test]
+    async fn start_makes_vm_running() {
+        let mut vm = make_vm();
+        vm.start().await.expect("start failed");
+        assert!(vm.is_running());
+    }
+
+    #[tokio::test]
+    async fn start_sets_pid_from_backend() {
+        let mut vm = make_vm();
+        vm.start().await.expect("start failed");
+        assert_eq!(vm.pid(), Some(42));
+    }
+
+    #[tokio::test]
+    async fn stop_clears_running_state() {
+        let mut vm = make_vm();
+        vm.start().await.expect("start");
+        vm.stop().await.expect("stop");
+        assert!(!vm.is_running());
+    }
+
+    #[tokio::test]
+    async fn kill_clears_running_state() {
+        let mut vm = make_vm();
+        vm.start().await.expect("start");
+        vm.kill().await.expect("kill");
+        assert!(!vm.is_running());
+    }
+
+    #[tokio::test]
+    async fn start_twice_returns_already_running() {
+        let mut vm = make_vm();
+        vm.start().await.expect("first start");
+        let err = vm.start().await.expect_err("second start must fail");
+        assert!(matches!(err, VmError::AlreadyRunning { .. }));
+    }
+
+    #[tokio::test]
+    async fn stop_not_running_returns_error() {
+        let err = make_vm().stop().await.expect_err("stop must fail");
+        assert!(matches!(err, VmError::NotRunning { .. }));
+    }
+
+    #[tokio::test]
+    async fn kill_not_running_returns_error() {
+        let err = make_vm().kill().await.expect_err("kill must fail");
+        assert!(matches!(err, VmError::NotRunning { .. }));
+    }
+
+    #[tokio::test]
+    async fn pause_not_running_returns_error() {
+        let err = make_vm().pause().await.expect_err("pause must fail");
+        assert!(matches!(err, VmError::NotRunning { .. }));
+    }
+
+    #[tokio::test]
+    async fn resume_not_running_returns_error() {
+        let err = make_vm().resume().await.expect_err("resume must fail");
+        assert!(matches!(err, VmError::NotRunning { .. }));
+    }
+
+    #[tokio::test]
+    async fn save_snapshot_not_running_returns_error() {
+        let err = make_vm().save_snapshot("v1").await.expect_err("must fail");
+        assert!(matches!(err, VmError::NotRunning { .. }));
+    }
+
+    #[tokio::test]
+    async fn restore_snapshot_not_running_returns_error() {
+        let err = make_vm().restore_snapshot("v1").await.expect_err("must fail");
+        assert!(matches!(err, VmError::NotRunning { .. }));
+    }
+
+    #[tokio::test]
+    async fn delete_snapshot_not_running_returns_error() {
+        let err = make_vm().delete_snapshot("v1").await.expect_err("must fail");
+        assert!(matches!(err, VmError::NotRunning { .. }));
+    }
+
+    #[tokio::test]
+    async fn save_snapshot_returns_snapshot_with_correct_tag() {
+        let mut vm = make_vm();
+        vm.start().await.expect("start");
+        let snap = vm.save_snapshot("release-1.0").await.expect("snapshot");
+        assert_eq!(snap.tag(), "release-1.0");
+    }
+
+    #[tokio::test]
+    async fn stop_after_kill_returns_not_running() {
+        let mut vm = make_vm();
+        vm.start().await.expect("start");
+        vm.kill().await.expect("kill");
+        let err = vm.stop().await.expect_err("stop after kill must fail");
+        assert!(matches!(err, VmError::NotRunning { .. }));
+    }
+}

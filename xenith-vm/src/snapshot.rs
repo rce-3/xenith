@@ -35,4 +35,18 @@ mod tests {
         let s = Snapshot::new("my-snap");
         assert_eq!(s.tag(), "my-snap");
     }
+
+    #[test]
+    fn snapshot_clone_is_equal() {
+        let s = Snapshot::new("clone-me");
+        assert_eq!(s.clone(), s);
+    }
+
+    #[test]
+    fn snapshot_usable_as_hash_map_key() {
+        let mut map = std::collections::HashMap::new();
+        let s = Snapshot::new("key");
+        map.insert(s.clone(), "value");
+        assert_eq!(map[&s], "value");
+    }
 }

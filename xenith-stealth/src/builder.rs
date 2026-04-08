@@ -58,4 +58,44 @@ mod tests {
         let args = StealthConfig::generate().build();
         assert!(args.iter().any(|a| a == "-cpu"));
     }
+
+    #[test]
+    fn build_contains_smbios_flag() {
+        let args = StealthConfig::generate().build();
+        assert!(args.iter().any(|a| a == "-smbios"));
+    }
+
+    #[test]
+    fn build_contains_no_kvmclock() {
+        let args = StealthConfig::generate().build();
+        assert!(args.iter().any(|a| a == "-no-kvmclock"));
+    }
+
+    #[test]
+    fn build_contains_device_flag() {
+        let args = StealthConfig::generate().build();
+        assert!(args.iter().any(|a| a == "-device"));
+    }
+
+    #[test]
+    fn profile_accessor_returns_nonempty_vendor() {
+        let cfg = StealthConfig::generate();
+        assert!(!cfg.profile().cpu_vendor().is_empty());
+    }
+
+    #[test]
+    fn cpu_args_precede_smbios_args() {
+        let args = StealthConfig::generate().build();
+        let cpu_pos = args.iter().position(|a| a == "-cpu").expect("-cpu present");
+        let smbios_pos = args.iter().position(|a| a == "-smbios").expect("-smbios present");
+        assert!(cpu_pos < smbios_pos, "-cpu must come before -smbios");
+    }
+
+    #[test]
+    fn smbios_args_precede_no_kvmclock() {
+        let args = StealthConfig::generate().build();
+        let smbios_pos = args.iter().position(|a| a == "-smbios").expect("-smbios present");
+        let clock_pos = args.iter().position(|a| a == "-no-kvmclock").expect("-no-kvmclock present");
+        assert!(smbios_pos < clock_pos, "-smbios must come before -no-kvmclock");
+    }
 }

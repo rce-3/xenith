@@ -242,4 +242,84 @@ mod tests {
         let cfg = VmConfig::new("test", 1, 1_073_741_824);
         assert_eq!(cfg.memory_mib(), 1024);
     }
+
+    #[test]
+    fn new_sets_name_vcpus_memory() {
+        let cfg = VmConfig::new("my-vm", 4, VmConfig::gib_to_bytes(8));
+        assert_eq!(cfg.name(), "my-vm");
+        assert_eq!(cfg.vcpus(), 4);
+        assert_eq!(cfg.memory_bytes(), VmConfig::gib_to_bytes(8));
+    }
+
+    #[test]
+    fn new_has_no_disks_or_networks() {
+        let cfg = VmConfig::new("v", 2, 1024);
+        assert!(cfg.disks().is_empty());
+        assert!(cfg.networks().is_empty());
+    }
+
+    #[test]
+    fn new_has_no_firmware() {
+        assert!(VmConfig::new("v", 2, 1024).firmware().is_none());
+    }
+
+    #[test]
+    fn new_default_display_is_none() {
+        assert_eq!(VmConfig::new("v", 2, 1024).display(), &DisplayMode::None);
+    }
+
+    #[test]
+    fn with_extra_args_extends_list() {
+        let args = vec!["--foo".to_owned(), "--bar".to_owned()];
+        let cfg = VmConfig::new("v", 2, 1024).with_extra_args(args.clone());
+        assert_eq!(cfg.extra_args(), args.as_slice());
+    }
+
+    #[test]
+    fn with_extra_args_chaining_accumulates() {
+        let cfg = VmConfig::new("v", 2, 1024)
+            .with_extra_args(["--a".to_owned()])
+            .with_extra_args(["--b".to_owned()]);
+        assert_eq!(cfg.extra_args(), &["--a", "--b"]);
+    }
+
+    #[test]
+    fn drive_ids_empty_when_no_disks() {
+        assert!(VmConfig::new("v", 2, 1024).drive_ids().is_empty());
+    }
+
+    #[test]
+    fn runtime_dir_contains_vm_name() {
+        let cfg = VmConfig::new("unique-vm-name", 2, 1024);
+        let dir = cfg.runtime_dir().to_string_lossy().into_owned();
+        assert!(dir.contains("unique-vm-name"));
+    }
+
+    #[test]
+    fn qmp_socket_ends_with_qmp_sock() {
+        let cfg = VmConfig::new("v", 2, 1024);
+        assert!(cfg.qmp_socket().ends_with("qmp.sock"));
+    }
+
+    #[test]
+    fn config_file_ends_with_config_toml() {
+        let cfg = VmConfig::new("v", 2, 1024);
+        assert!(cfg.config_file().ends_with("config.toml"));
+    }
+
+    #[test]
+    fn qmp_socket_is_inside_runtime_dir() {
+        let cfg = VmConfig::new("v", 2, 1024);
+        assert!(cfg.qmp_socket().starts_with(cfg.runtime_dir()));
+    }
+
+    #[test]
+    fn config_toml_round_trip_via_serde() {
+        let cfg = VmConfig::new("serde-test", 4, VmConfig::gib_to_bytes(8));
+        let s = toml::to_string_pretty(&cfg).expect("serialize");
+        let loaded: VmConfig = toml::from_str(&s).expect("deserialize");
+        assert_eq!(loaded.name(), cfg.name());
+        assert_eq!(loaded.vcpus(), cfg.vcpus());
+        assert_eq!(loaded.memory_bytes(), cfg.memory_bytes());
+    }
 }

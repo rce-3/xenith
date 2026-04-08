@@ -10,3 +10,13 @@
 pub fn build_args() -> Vec<String> {
     vec![]
 }
+
+#[cfg(test)]
+mod tests {
+    use super::build_args;
+
+    #[test]
+    fn returns_empty_vec() {
+        assert!(build_args().is_empty());
+    }
+}

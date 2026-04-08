@@ -144,4 +144,30 @@ mod tests {
     fn gib_to_bytes_converts_correctly() {
         assert_eq!(DiskImage::gib_to_bytes(2), 2_147_483_648);
     }
+
+    #[test]
+    fn disk_format_default_is_qcow2() {
+        assert_eq!(DiskFormat::default(), DiskFormat::Qcow2);
+    }
+
+    #[test]
+    fn disk_format_equality() {
+        assert_eq!(DiskFormat::Raw, DiskFormat::Raw);
+        assert_ne!(DiskFormat::Raw, DiskFormat::Qcow2);
+    }
+
+    #[test]
+    fn gib_to_bytes_zero() {
+        assert_eq!(DiskImage::gib_to_bytes(0), 0);
+    }
+
+    #[test]
+    fn disk_format_serde_lowercase() {
+        #[derive(serde::Serialize, serde::Deserialize, PartialEq, Debug)]
+        struct W { f: DiskFormat }
+        let s = toml::to_string(&W { f: DiskFormat::Qcow2 }).expect("serialize");
+        assert!(s.contains("qcow2"), "expected 'qcow2' in: {s}");
+        let rt: W = toml::from_str(&s).expect("deserialize");
+        assert_eq!(rt.f, DiskFormat::Qcow2);
+    }
 }
