@@ -27,9 +27,7 @@ use std::path::PathBuf;
 use mac_addr::MacAddr;
 use xenith_stealth::StealthConfig;
 use xenith_vm::{
-    DiskImage, DisplayMode, NetworkInterface, VmConfig,
-    backend::qemu::QemuBackend,
-    vm::Vm,
+    DiskImage, DisplayMode, NetworkInterface, VmConfig, backend::qemu::QemuBackend, vm::Vm,
 };
 
 const USAGE: &str = "\
@@ -150,11 +148,15 @@ fn build_config(args: &Args) -> VmConfig {
     let stealth = StealthConfig::generate();
     let disk = existing_disk(args.disk.clone());
     let net = NetworkInterface::new(args.tap.clone(), args.mac, "e1000");
-    let cfg = VmConfig::new(&args.name, args.vcpus, VmConfig::gib_to_bytes(args.memory_gib))
-        .with_disk(disk)
-        .with_network(net)
-        .with_display(args.display.clone())
-        .with_extra_args(stealth.build());
+    let cfg = VmConfig::new(
+        &args.name,
+        args.vcpus,
+        VmConfig::gib_to_bytes(args.memory_gib),
+    )
+    .with_disk(disk)
+    .with_network(net)
+    .with_display(args.display.clone())
+    .with_extra_args(stealth.build());
     match &args.firmware {
         Some(fw) => cfg.with_firmware(fw.clone()),
         None => cfg,
@@ -164,9 +166,25 @@ fn build_config(args: &Args) -> VmConfig {
 fn shell_quote(s: &str) -> String {
     // Wrap in single quotes if the string contains any shell-special characters.
     // Single-quote the whole value; a literal ' inside is escaped as '\'' .
-    let needs_quoting = s
-        .chars()
-        .any(|c| matches!(c, ' ' | '\t' | '(' | ')' | ',' | ';' | '&' | '|' | '<' | '>' | '$' | '`' | '\\' | '"' | '\''));
+    let needs_quoting = s.chars().any(|c| {
+        matches!(
+            c,
+            ' ' | '\t'
+                | '('
+                | ')'
+                | ','
+                | ';'
+                | '&'
+                | '|'
+                | '<'
+                | '>'
+                | '$'
+                | '`'
+                | '\\'
+                | '"'
+                | '\''
+        )
+    });
     if needs_quoting {
         format!("'{}'", s.replace('\'', r"'\''"))
     } else {
