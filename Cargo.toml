@@ -34,7 +34,7 @@ keywords = ["virtualization", "detection", "vmi", "debugger", "hypervisor"]
 [workspace.dependencies]
 # Those dependencies are shared across all packages,
 # so we define them here to avoid duplication.
-log = "0.4.25"
+log = "0.4.30"
 thiserror = "2.0.18"
 
 ################################################################################
