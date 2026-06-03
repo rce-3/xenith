@@ -1,5 +1,7 @@
 > [!WARNING]  
-> The project is in early development. The API is not stable and may change without deprecation. Use with caution and expect breaking changes. All features described here are planned but not yet implemented. See the [roadmap](https://xenith.re/docs/roadmap/) for details.
+> This project was ambitious, maybe too much considering the current state of virtual machine introspection. Originally planned to build on Xen, later on QEMU/KVM for a number of reasons. There's still a consequent open problems related to hypervisors APIs, semantic gap and others. 
+>
+> For these reasons I'm archiving this project as of 03/06/2026, and starting another related project, still ambitious but definitely more grounded and more useful.
 
 <p>
     <img src="xenith-website/static/images/xenith-banner-rounded.png" alt="Xenith banner" width="100%">
