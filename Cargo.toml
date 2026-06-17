@@ -5,13 +5,9 @@
 [workspace]
 resolver = "3" # see https://doc.rust-lang.org/cargo/reference/resolver.html#resolver-versions
 members = [
-    "xenith-domain-management",
-    "xenith-vmi",
-    "xenith-cli",
-    "xenith-debugger",
-    "xenith-scripting",
+    "xenith-vm",
+    "xenith-stealth",
     "xenith-redpill",
-    "xenith-gui",
 ]
 exclude = [ "xenith-website" ]
 
@@ -34,8 +30,19 @@ keywords = ["virtualization", "detection", "vmi", "debugger", "hypervisor"]
 [workspace.dependencies]
 # Those dependencies are shared across all packages,
 # so we define them here to avoid duplication.
-log = "0.4.25"
-thiserror = "2.0.18"
+log          = "0.4.25"
+mac-addr     = { version = "0.3", features = ["serde"] }
+tracing      = "0.1.44"
+thiserror    = "2.0.18"
+serde        = { version = "1.0.228", features = ["derive"] }
+serde_json   = "1.0.149"
+serde_yml    = "0.0.12"
+tokio        = { version = "1.51.0", features = ["full"] }
+memflow      = "0.2.4"
+memflow-qemu = "0.2.1"
+gdbstub      = "0.7.10"
+gdbstub_arch = "0.3.3"
+pyo3         = "0.28.3"
 
 ################################################################################
 # Lint settings

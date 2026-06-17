@@ -1,0 +1,24 @@
+[package]
+name = "xenith-stealth"
+description = "Anti-detection QEMU configuration; generates hardware identity and QEMU args to hide the VM."
+
+edition.workspace       = true
+rust-version.workspace  = true
+license.workspace       = true
+version.workspace       = true
+publish.workspace       = true
+authors.workspace       = true
+homepage.workspace      = true
+documentation.workspace = true
+repository.workspace    = true
+keywords.workspace      = true
+
+[lints]
+workspace = true
+
+[dependencies]
+serde      = { workspace = true }
+serde_yml  = { workspace = true }
+thiserror  = { workspace = true }
+rand       = "0.9"
+mac-addr   = { workspace = true }
